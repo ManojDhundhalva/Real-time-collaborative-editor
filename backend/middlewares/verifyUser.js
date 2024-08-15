@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 const verifyToken = (req, resp, next) => {
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers.Authorization;
 
   if (!authHeader) {
     return resp.status(404).json({ message: "You are not authenticated!" });
@@ -18,43 +18,17 @@ const verifyToken = (req, resp, next) => {
   });
 };
 
-const verifyTokenAndAuthorizationGeneral = (req, resp, next) => {
+const verifyTokenAndAuthorization = (req, resp, next) => {
   verifyToken(req, resp, () => {
-    if (
-      String(req.user.username) === String(req.query.username) &&
-      String(req.user.role) === String(req.query.role)
-    ) {
+    if (String(req.user.username) === String(req.query.username)) {
       next();
     } else {
       resp.status(404).json({ message: "You are not allowed to do that!" });
     }
   });
 };
-
-const verifyTokenAndAuthorization = (requiredRole) => (req, resp, next) => {
-  verifyToken(req, resp, () => {
-    if (
-      String(req.user.username) === String(req.query.username) &&
-      String(req.user.role) === String(req.query.role) &&
-      String(req.query.role) === requiredRole
-    ) {
-      next();
-    } else {
-      resp.status(404).json({ message: "You are not allowed to do that!" });
-    }
-  });
-};
-
-const verifyTokenAndAuthorizationUser = verifyTokenAndAuthorization("user");
-const verifyTokenAndAuthorizationManager =
-  verifyTokenAndAuthorization("manager");
-const verifyTokenAndAuthorizationShipper =
-  verifyTokenAndAuthorization("shipper");
 
 module.exports = {
-  verifyTokenAndAuthorizationUser,
-  verifyTokenAndAuthorizationManager,
-  verifyTokenAndAuthorizationShipper,
-  verifyTokenAndAuthorizationGeneral,
+  verifyTokenAndAuthorization,
   verifyToken,
 };

@@ -7,6 +7,10 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 8000;
 
+// Import Routes
+const loginRoutes = require("./routes/login");
+const registerRoutes = require("./routes/register");
+
 // Middleware
 app.use(
   cors({
@@ -23,6 +27,9 @@ app.use(express.json());
 app.get("/", (req, res) => {
   res.send("Hello, World!");
 });
+
+app.use("/login", loginRoutes);
+app.use("/register", registerRoutes);
 
 // Start Server
 app.listen(port, () => {

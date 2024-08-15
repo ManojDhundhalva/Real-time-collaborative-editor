@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/auth";
 import { toast } from "react-hot-toast";
 import {
   Grid,
@@ -12,11 +11,15 @@ import {
   InputAdornment,
   CircularProgress,
 } from "@mui/material";
+
+//icons
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import Visibility from "@mui/icons-material/Visibility";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import PersonIcon from "@mui/icons-material/Person";
 import VpnKeyRoundedIcon from "@mui/icons-material/VpnKeyRounded";
+import EmailRoundedIcon from "@mui/icons-material/EmailRounded";
+
 import axios from "axios";
 import config from "../config.js";
 
@@ -25,10 +28,13 @@ export default function RegisterPage() {
 
   const [loading, setLoading] = useState(false);
   const [justVerify, setJustVerify] = useState(false);
-  const { setIsLoggedIn, validateUser, isLoggedIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [isValidEmail, setIsValidEmail] = useState(false);
 
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [userName, setUserName] = useState("");
+  const [emailId, setEmailId] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
@@ -38,49 +44,73 @@ export default function RegisterPage() {
     event.preventDefault();
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    setJustVerify(true);
+  const handleEmailChange = (e) => {
+    setEmailId((prev) => e.target.value);
+    if (!emailRegex.test(e.target.value)) {
+      setIsValidEmail((prev) => false);
+    } else {
+      setIsValidEmail((prev) => true);
+    }
+  };
+
+  const isSubmitValidForAllFields = () => {
     if (
+      firstName === "" ||
+      firstName.length >= 255 ||
+      lastName === "" ||
+      lastName.length >= 255 ||
       userName === "" ||
       userName.length >= 255 ||
+      emailId === "" ||
+      emailId.length >= 255 ||
+      !isValidEmail ||
       password === "" ||
       password.length < 8 ||
       password.length >= 255
     ) {
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setJustVerify((prev) => true);
+
+    if (!isSubmitValidForAllFields()) {
       return;
     }
 
-    setLoading(true);
+    setLoading((prev) => true);
 
     try {
       const results = await axios.post(
-        (config.BACKEND_API || "http://localhost:8000") + "/login",
+        (config.BACKEND_API || "http://localhost:8000") + "/register",
         {
+          firstname: firstName,
+          lastname: lastName,
           username: userName,
+          emailid: emailId,
           password,
         }
       );
-      if (results.status === 200) {
-        window.localStorage.setItem("token", results.data.token);
-        window.localStorage.setItem("username", results.data.username);
-        setIsLoggedIn((prev) => true);
-        toast.success("Login successful!");
-        navigate("/");
+
+      if (results.status === 201) {
+        toast.success("Registered successfully!");
+        navigate("/login");
       } else {
-        toast.error("Invalid Credentials");
+        toast.error(results.data.message);
       }
     } catch (err) {
       toast.error("Error Occured !!");
       console.log("error -> ", err);
     }
-    setLoading(false);
-  };
 
-  useEffect(() => {
-    validateUser();
-  });
+    setLoading((prev) => false);
+  };
 
   return (
     <Grid
@@ -117,10 +147,92 @@ export default function RegisterPage() {
           <LockOutlinedIcon />
         </Avatar>
         <Typography variant="h5" fontWeight="bold" mb={2}>
-          Sign in
+          Sign Up
         </Typography>
         <form onSubmit={handleSubmit} style={{ width: "100%" }}>
           <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                color="success"
+                value={firstName}
+                onChange={(e) => {
+                  setFirstName((prev) => e.target.value);
+                }}
+                id="first-name"
+                label="First Name"
+                placeholder="First Name"
+                variant="outlined"
+                fullWidth
+                required
+                size="small"
+                autoComplete="on"
+                error={
+                  justVerify && (firstName === "" || firstName.length >= 255)
+                }
+                helperText={
+                  justVerify &&
+                  (firstName === ""
+                    ? "This field cannot be empty."
+                    : firstName.length >= 255
+                    ? "First Name is too long"
+                    : "")
+                }
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonIcon sx={{ color: "#134611" }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 25,
+                    fontWeight: "bold",
+                  },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                color="success"
+                value={lastName}
+                onChange={(e) => {
+                  setLastName((prev) => e.target.value);
+                }}
+                id="last-name"
+                label="Last Name"
+                placeholder="Last Name"
+                variant="outlined"
+                fullWidth
+                required
+                size="small"
+                autoComplete="on"
+                error={
+                  justVerify && (lastName === "" || lastName.length >= 255)
+                }
+                helperText={
+                  justVerify &&
+                  (lastName === ""
+                    ? "This field cannot be empty."
+                    : lastName.length >= 255
+                    ? "Last Name is too long"
+                    : "")
+                }
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonIcon sx={{ color: "#134611" }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 25,
+                    fontWeight: "bold",
+                  },
+                }}
+              />
+            </Grid>
             <Grid item xs={12}>
               <TextField
                 color="success"
@@ -130,7 +242,7 @@ export default function RegisterPage() {
                 }}
                 id="username"
                 label="Username"
-                placeholder="username"
+                placeholder="Username"
                 variant="outlined"
                 fullWidth
                 required
@@ -151,6 +263,43 @@ export default function RegisterPage() {
                   startAdornment: (
                     <InputAdornment position="start">
                       <PersonIcon sx={{ color: "#134611" }} />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 25,
+                    fontWeight: "bold",
+                  },
+                }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                color="success"
+                value={emailId}
+                onChange={handleEmailChange}
+                id="email-id"
+                label="Email ID"
+                placeholder="Email ID"
+                variant="outlined"
+                fullWidth
+                required
+                size="small"
+                autoComplete="on"
+                error={justVerify && (emailId === "" || emailId.length >= 255)}
+                helperText={
+                  justVerify &&
+                  (emailId === ""
+                    ? "This field cannot be empty."
+                    : emailId.length >= 255
+                    ? "Email ID is too long"
+                    : "")
+                }
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailRoundedIcon sx={{ color: "#134611" }} />
                     </InputAdornment>
                   ),
                 }}
@@ -242,7 +391,7 @@ export default function RegisterPage() {
                   },
                 }}
               >
-                {!loading ? "Sign In" : "Signing In"}
+                {!loading ? "Sign Up" : "Signing Up"}
                 {loading && <span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>}
                 {loading && (
                   <CircularProgress
@@ -257,18 +406,17 @@ export default function RegisterPage() {
             </Grid>
             <Grid item container justifyContent="space-between" xs={12}>
               <Button
-                color="secondary"
                 variant="text"
                 onClick={() => {
-                  navigate("/register");
+                  navigate("/login");
                 }}
                 sx={{
                   fontWeight: "bold",
-                  color: "white",
+                  color: "#134611",
                   textDecoration: "underline",
                 }}
               >
-                Don't have an account? Sign Up
+                Already have an account? Sign In
               </Button>
             </Grid>
           </Grid>

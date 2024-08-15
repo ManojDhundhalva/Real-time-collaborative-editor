@@ -6,31 +6,20 @@ const { v4: uuidv4 } = require("uuid");
 
 require("dotenv").config();
 
-const saltRounds = Number(process.env.SALT_ROUNDS);
+const saltRounds = 10;
 const hashAsync = util.promisify(bcrypt.hash);
 
 const createAccount = async (req, resp) => {
-  const {
-    firstname,
-    lastname,
-    username,
-    emailid,
-    password,
-    role,
-    phone_number,
-  } = req.body;
+  const { firstname, lastname, username, emailid, password } = req.body;
+
+  if (!firstname || !lastname || !username || !emailid || !password) {
+    return resp.status(500).json({ message: "REQUEST - Fields are Empty!!" });
+  }
 
   try {
-    const usernameResult = await pool.query(queries.getUserName, [username]);
-    if (usernameResult.rows.length !== 0) {
-      return resp.status(201).json({ message: "UserName Already Exist" });
-    }
-
-    const emailResult = await pool.query(queries.getEmailId, [emailid]);
-    if (emailResult.rows.length !== 0) {
-      return resp
-        .status(201)
-        .json({ message: "Email-id is Already Registered" });
+    const results = await pool.query(queries.getUserName, [username, emailid]);
+    if (results.rows.length) {
+      return resp.status(209).json({ message: "User Already Exist!" });
     }
 
     const newPassword = await hashAsync(password, saltRounds);
@@ -43,11 +32,9 @@ const createAccount = async (req, resp) => {
       username,
       emailid,
       newPassword,
-      role,
-      phone_number,
     ]);
 
-    resp.status(200).json({ message: "Created Successfully" });
+    resp.status(201).json({ message: "Account Created Successfully!" });
   } catch (error) {
     console.error(error);
     resp.status(500).json({ message: "DATABASE - Internal Server Error" });

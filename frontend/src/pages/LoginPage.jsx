@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/auth";
 import { toast } from "react-hot-toast";
@@ -25,7 +25,7 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [justVerify, setJustVerify] = useState(false);
-  const { setIsLoggedIn, validateUser, isLoggedIn } = useAuth();
+  const { setIsLoggedIn } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
   const [userName, setUserName] = useState("");
@@ -38,10 +38,7 @@ export default function LoginPage() {
     event.preventDefault();
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    setJustVerify(true);
+  const isSubmitValidForAllFields = () => {
     if (
       userName === "" ||
       userName.length >= 255 ||
@@ -49,10 +46,20 @@ export default function LoginPage() {
       password.length < 8 ||
       password.length >= 255
     ) {
+      return false;
+    }
+    return true;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    setJustVerify((prev) => true);
+    if (!isSubmitValidForAllFields()) {
       return;
     }
 
-    setLoading(true);
+    setLoading((prev) => true);
 
     try {
       const results = await axios.post(
@@ -65,8 +72,8 @@ export default function LoginPage() {
       if (results.status === 200) {
         window.localStorage.setItem("token", results.data.token);
         window.localStorage.setItem("username", results.data.username);
-        setIsLoggedIn((prev) => true);
         toast.success("Login successful!");
+        setIsLoggedIn((prev) => true);
         navigate("/");
       } else {
         toast.error("Invalid Credentials");
@@ -75,12 +82,8 @@ export default function LoginPage() {
       toast.error("Error Occured !!");
       console.log("error -> ", err);
     }
-    setLoading(false);
+    setLoading((prev) => false);
   };
-
-  useEffect(() => {
-    validateUser();
-  });
 
   return (
     <Grid
@@ -129,8 +132,8 @@ export default function LoginPage() {
                   setUserName((prev) => e.target.value);
                 }}
                 id="username"
-                label="Username"
-                placeholder="username"
+                label="Username / Email ID"
+                placeholder="Username OR Email-ID"
                 variant="outlined"
                 fullWidth
                 required
@@ -257,14 +260,13 @@ export default function LoginPage() {
             </Grid>
             <Grid item container justifyContent="space-between" xs={12}>
               <Button
-                color="secondary"
                 variant="text"
                 onClick={() => {
                   navigate("/register");
                 }}
                 sx={{
                   fontWeight: "bold",
-                  color: "white",
+                  color: "#134611",
                   textDecoration: "underline",
                 }}
               >

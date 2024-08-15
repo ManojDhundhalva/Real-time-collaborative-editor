@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/auth";
 
@@ -21,18 +21,18 @@ const Navbar = () => {
     setAnchorEl(null);
   };
 
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     const currentScrollPos = window.pageYOffset;
     setShowNavbar(prevScrollPos > currentScrollPos || currentScrollPos < 10);
     setPrevScrollPos(currentScrollPos);
-  };
+  }, [prevScrollPos]);
 
   useEffect(() => {
     window.addEventListener("scroll", handleScroll);
     return () => {
       window.removeEventListener("scroll", handleScroll);
     };
-  }, [prevScrollPos]);
+  }, [handleScroll]);
 
   const navbarStyle = {
     position: "fixed",
@@ -71,7 +71,7 @@ const Navbar = () => {
             fontFamily: "Quicksand",
           }}
         >
-          <i class="fa-regular fa-newspaper"></i>
+          <i className="fa-regular fa-newspaper"></i>
           Editor
         </Link>
         <button

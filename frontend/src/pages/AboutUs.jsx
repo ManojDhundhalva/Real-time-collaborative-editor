@@ -10,7 +10,7 @@ function AboutUS() {
 
   useEffect(() => {
     validateUser();
-  }, []);
+  });
 
   useEffect(() => {
     AOS.init({
@@ -50,8 +50,8 @@ function AboutUS() {
                   </div>
                   <h5 style={{ fontFamily: "Quicksand" }}>
                     <a
+                      href="/"
                       style={{ textDecoration: "none" }}
-                      href="#"
                       target="_blank"
                     >
                       ABC

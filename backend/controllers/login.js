@@ -10,32 +10,34 @@ const compareAsync = util.promisify(bcrypt.compare);
 const getAccount = async (req, resp) => {
   const { username, password } = req.body;
 
+  if (!username || !password) {
+    return resp.status(500).json({ message: "REQUEST - Fields are Empty!!" });
+  }
+
   try {
-    const results = await pool.query(queries.getAccountByUserName, [username]);
+    const results = await pool.query(queries.getAccount, [username]);
 
     if (results.rows.length !== 1) {
-      return resp.status(201).json({ message: "User not found" });
+      return resp
+        .status(202)
+        .json({ message: "Username or Email ID doesn't exist." });
     }
-    const { id, role } = results.rows[0];
-    const storedPassword = results.rows[0].password;
+
+    const { id, password: storedPassword } = results.rows[0]; // { old-name : new-name }
 
     const result = await compareAsync(password, storedPassword);
 
     if (result) {
-      const token = jwt.sign(
-        { id, username, role },
-        process.env.JWT_SECRET_KEY,
-        {
-          expiresIn: "1d",
-        }
-      );
-      resp.status(200).json({ token, username, role });
+      const token = jwt.sign({ id, username }, process.env.JWT_SECRET_KEY, {
+        expiresIn: "1d",
+      });
+      return resp.status(200).json({ token, username });
     } else {
-      resp.status(201).json({ message: "Incorrect Password" });
+      return resp.status(201).json({ message: "Incorrect Password" });
     }
   } catch (error) {
     console.error(error);
-    resp.status(500).json({ message: "Internal Server Error" });
+    resp.status(500).json({ message: "DATABASE - Internal Server Error" });
   }
 };
 
