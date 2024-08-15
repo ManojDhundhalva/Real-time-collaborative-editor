@@ -3,10 +3,32 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 
+//imported
+import { BrowserRouter } from "react-router-dom";
+import { AuthProvider } from "./context/auth";
+import { Toaster } from "react-hot-toast";
+
+//css
+import "./CSS/index.css";
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <AuthProvider>
+        <App />
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            style: {
+              zIndex: 9999,
+              fontFamily: "Quicksand",
+              fontWeight: "600",
+            },
+          }}
+        />
+      </AuthProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );
 
