@@ -95,6 +95,20 @@ const Navbar = () => {
             <Button disableRipple variant="text" sx={buttonStyles}>
               <Link
                 className="nav-link active"
+                to="/project"
+                style={linkStyles}
+              >
+                project
+              </Link>
+            </Button>
+            <Button disableRipple variant="text" sx={buttonStyles}>
+              <Link className="nav-link active" to="/editor" style={linkStyles}>
+                Editor
+              </Link>
+            </Button>
+            <Button disableRipple variant="text" sx={buttonStyles}>
+              <Link
+                className="nav-link active"
                 to="/aboutus"
                 style={linkStyles}
               >

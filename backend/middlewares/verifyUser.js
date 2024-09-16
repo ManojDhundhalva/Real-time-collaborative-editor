@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 const verifyToken = (req, resp, next) => {
-  const authHeader = req.headers.Authorization;
+  const authHeader = req.headers.authorization;
 
   if (!authHeader) {
     return resp.status(404).json({ message: "You are not authenticated!" });

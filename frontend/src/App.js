@@ -8,10 +8,13 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ProfilePage from "./pages/ProfilePage";
 import AboutUS from "./pages/AboutUs";
+import ProjectPage from "./pages/ProjectPage";
 
 //components
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import TextEditor from "./components/TextEditor";
+import Editor from "./components/Editor";
 
 //css
 import "./CSS/App.css";
@@ -24,21 +27,23 @@ function App() {
   });
 
   const location = useLocation();
-  const hiddenPaths = ["/login", "/register"];
-  const isHiddenPath = hiddenPaths.includes(location.pathname);
+  const paths = ["/"];
+  const isPath = paths.includes(location.pathname);
 
   return (
     <>
       <ThemeProvider theme={theme}>
-        {!isHiddenPath && <Navbar />}
+        {isPath && <Navbar />}
         <Routes>
           <Route exact path="/" element={<HomePage />} />
           <Route exact path="/login" element={<LoginPage />} />
           <Route exact path="/register" element={<RegisterPage />} />
           <Route exact path="/profile" element={<ProfilePage />} />
           <Route exact path="/aboutus" element={<AboutUS />} />
+          <Route exact path="/project" element={<ProjectPage />} />
+          <Route exact path="/project/:projectId" element={<Editor />} />
         </Routes>
-        {!isHiddenPath && <Footer />}
+        {isPath && <Footer />}
       </ThemeProvider>
     </>
   );
