@@ -43,4 +43,21 @@ CREATE TABLE IF NOT EXISTS live_users(
     PRIMARY KEY (project_id, file_id, username)
 );
 
+CREATE TABLE IF NOT EXISTS file_tree(
+    file_tree_id UUID PRIMARY KEY, -- in root file it will be parent_id == file_tree_id
+    project_id UUID REFERENCES projects(project_id) NOT NULL,
+    parent_id UUID REFERENCES file_tree(file_tree_id),  
+    name VARCHAR(255) NOT NULL,
+    is_folder BOOLEAN NOT NULL,
+    file_tree_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS file_tree_user(
+    user_id UUID REFERENCES users(id) NOT NULL,
+    file_tree_id UUID REFERENCES file_tree(file_tree_id) NOT NULL,
+    is_expand BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (user_id, file_tree_id),
+    file_tree_user_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- also add which project had which file for each database, like active_files, live_users

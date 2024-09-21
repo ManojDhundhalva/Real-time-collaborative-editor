@@ -33,6 +33,22 @@ const addProject = async (req, resp) => {
       uniqueId,
       req.user.id,
     ]);
+
+    const uniqueIdFileTree = uuidv4();
+    const results3 = await pool.query(queries.addFileTree, [
+      uniqueIdFileTree,
+      uniqueId,
+      null,
+      projectName,
+      true,
+    ]);
+
+    const results4 = await pool.query(queries.addFileTreeUser, [
+      req.user.id,
+      uniqueIdFileTree,
+      false,
+    ]);
+
     resp
       .status(200)
       .json({ project_id: uniqueId, message: "Project added successfully" });
@@ -129,6 +145,19 @@ const getAllActiveFiles = async (req, resp) => {
   }
 };
 
+const getFileTree = async (req, resp) => {
+  try {
+    const results = await pool.query(queries.getFileTree, [
+      req.query.projectId,
+    ]);
+
+    resp.status(200).json(results.rows);
+  } catch (err) {
+    console.error("Error ->", err);
+    resp.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   getAllProjects,
   addProject,
@@ -137,4 +166,5 @@ module.exports = {
   getProjectName,
   addContributor,
   getAllActiveFiles,
+  getFileTree,
 };

@@ -14,7 +14,7 @@ import ProjectPage from "./pages/ProjectPage";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import TextEditor from "./components/TextEditor";
-import Editor from "./components/Editor";
+import Editor from "./pages/Editor";
 
 //css
 import "./CSS/App.css";

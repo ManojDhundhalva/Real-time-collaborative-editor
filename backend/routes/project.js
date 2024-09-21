@@ -15,6 +15,7 @@ router.post("/create-a-new-file", verifyTokenAndAuthorization, controller.create
 router.get("/get-project-name", verifyTokenAndAuthorization, controller.getProjectName);
 router.post("/add-contributor", verifyTokenAndAuthorization, controller.addContributor);
 router.get("/get-all-active-files", verifyTokenAndAuthorization, controller.getAllActiveFiles);
+router.get("/get-file-tree", verifyTokenAndAuthorization, controller.getFileTree);
 
 
 

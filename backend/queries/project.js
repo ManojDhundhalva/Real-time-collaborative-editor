@@ -30,6 +30,27 @@ VALUES
     ($1, $2, TRUE);
 `;
 
+const addFileTree = `
+INSERT INTO file_tree (
+    file_tree_id,
+    project_id,
+    parent_id,
+    name, 
+    is_folder
+)
+VALUES 
+    ($1, $2, $3, $4, $5);
+`;
+
+const addFileTreeUser = `
+INSERT INTO file_tree_user (
+    user_id,
+    file_tree_id,
+    is_expand
+)
+VALUES 
+    ($1, $2, $3);`;
+
 const makeAllActiveFilesToLive = `
 UPDATE live_users 
 SET is_live = TRUE 
@@ -107,6 +128,10 @@ JOIN files AS f ON af.file_id = f.file_id
 WHERE af.username = $1;
 `;
 
+const getFileTree = `
+SELECT * FROM file_tree WHERE project_id = $1;
+`;
+
 module.exports = {
   getAllProjects,
   addProjects,
@@ -118,4 +143,7 @@ module.exports = {
   getContributorId,
   addContributor,
   getAllActiveFiles,
+  addFileTree,
+  addFileTreeUser,
+  getFileTree,
 };
