@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
-import { Grid } from "@mui/material";
+import { Grid, Avatar, Tooltip, Zoom } from "@mui/material";
 
 const Tabs = (props) => {
   const { tabs, setTabs, selectedFileId, handleCloseTab, handleFileClick } =
@@ -56,12 +56,53 @@ const Tabs = (props) => {
                       }}
                     >
                       <span>{tab.name}</span>
+                      {tab.users.map(
+                        (user, index) =>
+                          user.is_live && (
+                            <Tooltip
+                              key={index}
+                              TransitionComponent={Zoom}
+                              title={
+                                window.localStorage.getItem("username") ===
+                                user.username
+                                  ? "You"
+                                  : user.username
+                              }
+                              placement="right"
+                              arrow
+                              componentsProps={{
+                                tooltip: {
+                                  sx: {
+                                    bgcolor: "common.black",
+                                    "& .MuiTooltip-arrow": {
+                                      color: "common.black",
+                                    },
+                                  },
+                                },
+                              }}
+                            >
+                              <Avatar
+                                key={index}
+                                sx={{
+                                  bgcolor: user.is_active_in_tab
+                                    ? "green"
+                                    : "grey",
+                                }}
+                                alt={tab.name}
+                                src="/broken-image.jpg"
+                              >
+                                {user.username[0].toUpperCase()}
+                              </Avatar>
+                            </Tooltip>
+                          )
+                      )}
                       <IconButton
                         size="small"
                         aria-label="close"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleCloseTab(tab.id);
+                          console.log(tab.id);
                         }}
                         sx={{ marginLeft: 1 }}
                       >

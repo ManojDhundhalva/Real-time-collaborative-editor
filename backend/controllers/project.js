@@ -43,11 +43,11 @@ const addProject = async (req, resp) => {
       true,
     ]);
 
-    const results4 = await pool.query(queries.addFileTreeUser, [
-      req.user.id,
-      uniqueIdFileTree,
-      false,
-    ]);
+    // const results4 = await pool.query(queries.addFileTreeUser, [
+    //   req.user.id,
+    //   uniqueIdFileTree,
+    //   false,
+    // ]);
 
     resp
       .status(200)
@@ -149,12 +149,68 @@ const getFileTree = async (req, resp) => {
   try {
     const results = await pool.query(queries.getFileTree, [
       req.query.projectId,
+      req.user.id,
     ]);
 
     resp.status(200).json(results.rows);
   } catch (err) {
     console.error("Error ->", err);
     resp.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const getInitialTabs = async (req, resp) => {
+  try {
+    await pool.query(queries.setAllFilesLive, [
+      req.user.username,
+      req.query.projectId,
+    ]);
+
+    const results = await pool.query(queries.getInitialTabs, [
+      req.user.username,
+      req.query.projectId,
+    ]);
+
+    resp.status(200).json(results.rows);
+  } catch (err) {
+    console.error("Error ->", err);
+    resp.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const getLiveUsers = async (req, resp) => {
+  try {
+    const results = await pool.query(queries.getLiveUsers, [
+      req.query.projectId,
+    ]);
+
+    resp.status(200).json(results.rows);
+  } catch (err) {
+    console.error("Error ->", err);
+    resp.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const setExpandData = async (req, resp) => {
+  const { file_tree_id, expand } = req.body;
+  if (expand) {
+    try {
+      await pool.query(queries.insertExpandData, [req.user.id, file_tree_id]);
+
+      resp.status(200).json({ message: "Update expand" });
+    } catch (err) {
+      console.error("Error ->", err);
+      resp.status(500).json({ message: "Internal Server Error" });
+    }
+  } else {
+    try {
+      await pool.query(queries.deleteExpandData, [req.user.id, file_tree_id]);
+
+      resp.status(200).json({ message: "DELETED expand" });
+    } catch (err) {
+      console.error("Error ->", err);
+      resp.status(500).json({ message: "Internal Server Error" });
+    }
   }
 };
 
@@ -167,4 +223,7 @@ module.exports = {
   addContributor,
   getAllActiveFiles,
   getFileTree,
+  getInitialTabs,
+  getLiveUsers,
+  setExpandData,
 };

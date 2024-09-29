@@ -46,25 +46,25 @@ app.use("/register", registerRoutes);
 app.use("/project", projectRoutes);
 
 // Query to insert live users
-const insertLiveUser = async (fileId, username) => {
+const insertLiveUser = async (project_id, fileId, username) => {
   if (!username || !fileId) {
     return;
   }
   try {
-    const results = await pool.query(
-      "SELECT * FROM live_users WHERE file_id = $1 AND username = $2",
-      [fileId, username]
+    await pool.query(
+      "UPDATE live_users SET is_active_in_tab = FALSE WHERE username = $1 AND project_id = $2",
+      [username, project_id]
     );
 
-    await pool.query(
-      "UPDATE live_users SET is_active_in_tab = FALSE WHERE username = $1",
-      [username]
+    const results = await pool.query(
+      "SELECT * FROM live_users WHERE file_id = $1 AND username = $2 AND project_id = $3",
+      [fileId, username, project_id]
     );
     if (results.rows.length) {
       try {
         await pool.query(
-          "UPDATE live_users SET is_active_in_tab = TRUE, is_live = TRUE, live_users_timestamp = CURRENT_TIMESTAMP WHERE file_id = $1 AND username = $2",
-          [fileId, username]
+          "UPDATE live_users SET is_active_in_tab = TRUE, is_live = TRUE, live_users_timestamp = CURRENT_TIMESTAMP WHERE file_id = $1 AND username = $2 AND project_id = $3",
+          [fileId, username, project_id]
         );
       } catch (err) {
         console.error("Error updating live user:", err);
@@ -73,8 +73,8 @@ const insertLiveUser = async (fileId, username) => {
     } else {
       try {
         await pool.query(
-          "INSERT INTO live_users (file_id, username, is_active_in_tab, is_live, live_users_timestamp) VALUES ($1, $2, TRUE, TRUE, CURRENT_TIMESTAMP) ON CONFLICT (file_id, username) DO NOTHING;",
-          [fileId, username]
+          "INSERT INTO live_users (file_id, project_id, username, is_active_in_tab, is_live, live_users_timestamp) VALUES ($1, $2, $3, TRUE, TRUE, CURRENT_TIMESTAMP);",
+          [fileId, project_id, username]
         );
       } catch (err) {
         console.error("Error inserting live user:", err);
@@ -99,26 +99,32 @@ const removeActiveLiveUser = async (username) => {
 };
 
 // Query to get live users in a file
-const getLiveUsersInFile = async (fileId, username) => {
-  const query = `SELECT f.*, lu.*, f.file_id AS id FROM files AS f LEFT JOIN live_users AS lu ON f.file_id = lu.file_id WHERE lu.file_id = $1 AND lu.username = $2;`; //f.project_id = $1;
-  const res = await pool.query(query, [fileId, username]);
+const getLiveUsersInFile = async (project_id, fileId, username) => {
+  const query = `SELECT f.*, lu.*, f.file_id AS id FROM files AS f LEFT JOIN live_users AS lu ON f.file_id = lu.file_id WHERE lu.file_id = $1 AND lu.username = $2 AND lu.project_id = $3;`; //f.project_id = $1;
+  const res = await pool.query(query, [fileId, username, project_id]);
   return res.rows;
 };
 
-// file_tree_id UUID PRIMARY KEY, -- in root file it will be parent_id == file_tree_id
-// project_id UUID REFERENCES projects(project_id) NOT NULL,
-// parent_id UUID REFERENCES file_tree(file_tree_id),
-// name VARCHAR(255) NOT NULL,
-// is_folder BOOLEAN NOT NULL,
-// file_tree_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+const getALiveUserInFile = async (fileId, username) => {
+  const query = `SELECT * FROM live_users WHERE file_id = $1 AND username = $2;`;
+  const res = await pool.query(query, [fileId, username]);
+  return res.rows[0];
+};
+
+const getAllLiveUserInFile = async (fileId) => {
+  const query = `SELECT * FROM live_users WHERE file_id = $1`;
+  const res = await pool.query(query, [fileId]);
+  return res.rows;
+};
 
 const insertAndGetNewNodeToFileExplorer = async (
+  username,
   project_id,
   new_node_parent_id,
   name,
   is_folder
 ) => {
-  const uniqueIdFileTree = uuidv4();
+  const uniqueIdFileTree = uuidv4(); //file_tree_id is file_id
   const insertQuery = `INSERT INTO file_tree (file_tree_id, project_id, parent_id, name, is_folder) VALUES ($1, $2, $3, $4, $5)`; //f.project_id = $1;
   await pool.query(insertQuery, [
     uniqueIdFileTree,
@@ -128,10 +134,76 @@ const insertAndGetNewNodeToFileExplorer = async (
     is_folder,
   ]);
 
+  if (!is_folder) {
+    const file_extension = name.split(".").pop().toLowerCase();
+    await pool.query(
+      "INSERT INTO files (file_id, project_id, file_created_by, file_name, file_extension) VALUES ($1, $2, $3, $4, $5)",
+      [uniqueIdFileTree, project_id, username, name, file_extension]
+    );
+  }
+
   const getQuery = `SELECT * FROM file_tree WHERE file_tree_id = $1`; //f.project_id = $1;
   const result = await pool.query(getQuery, [uniqueIdFileTree]);
 
   return result.rows[0];
+};
+
+const deleteFileAndChildren = async (fileTreeId) => {
+  // Step 1: Get the file_tree_ids of the node and its descendants
+  const getDescendantsQuery = `
+    WITH RECURSIVE descendants AS (
+        SELECT file_tree_id
+        FROM file_tree
+        WHERE file_tree_id = $1
+        UNION ALL
+        SELECT f.file_tree_id
+        FROM file_tree f
+        INNER JOIN descendants d ON f.parent_id = d.file_tree_id
+    )
+    SELECT file_tree_id FROM descendants;
+  `;
+
+  try {
+    // Get all the descendants
+    const descendantsResult = await pool.query(getDescendantsQuery, [
+      fileTreeId,
+    ]);
+
+    console.log(descendantsResult.rows);
+
+    for (let i = descendantsResult.rows.length - 1; i >= 0; i--) {
+      const { file_tree_id } = descendantsResult.rows[i];
+
+      await pool.query(
+        "DELETE FROM file_tree_expand_user WHERE file_tree_id = $1",
+        [file_tree_id]
+      );
+    }
+
+    for (let i = descendantsResult.rows.length - 1; i >= 0; i--) {
+      const { file_tree_id } = descendantsResult.rows[i];
+
+      await pool.query("DELETE FROM file_tree WHERE file_tree_id = $1", [
+        file_tree_id,
+      ]);
+    }
+
+    for (let i = descendantsResult.rows.length - 1; i >= 0; i--) {
+      const { file_tree_id } = descendantsResult.rows[i];
+
+      await pool.query("DELETE FROM live_users WHERE file_id = $1", [
+        file_tree_id,
+      ]);
+    }
+
+    for (let i = descendantsResult.rows.length - 1; i >= 0; i--) {
+      const { file_tree_id } = descendantsResult.rows[i];
+
+      await pool.query("DELETE FROM files WHERE file_id = $1", [file_tree_id]);
+    }
+  } catch (err) {
+    console.error("Error deleting files:", err);
+  }
 };
 
 io.on("connection", (socket) => {
@@ -172,13 +244,16 @@ io.on("connection", (socket) => {
   //   // socket.leave(file_id);
   // });
 
-  socket.on("editor:join-project", ({ project_id }) => {
+  socket.on("editor:join-project", ({ project_id, username }) => {
     socket.join(project_id);
+    io.to(project_id).emit("editor:live-user-joined", { username });
+
     console.log("project_id", project_id);
     socket.on(
       "file-explorer:insert-node",
       async ({ new_node_parent_id, name, is_folder }) => {
         const new_node = await insertAndGetNewNodeToFileExplorer(
+          username,
           project_id,
           new_node_parent_id,
           name,
@@ -188,26 +263,60 @@ io.on("connection", (socket) => {
       }
     );
 
-    socket.on("code-editor:send-change", (change) => {
-      socket.broadcast
-        .to(project_id)
-        .emit("code-editor:receive-change", change);
+    socket.on("file-explorer:delete-node", async ({ node_id }) => {
+      await deleteFileAndChildren(node_id);
+      io.to(project_id).emit("file-explorer:delete-node", { node_id });
     });
 
-    socket.on("code-editor:send-cursor", (change) => {
+    socket.on("code-editor:send-change", (data) => {
+      socket.broadcast.to(project_id).emit("code-editor:receive-change", data);
+    });
+
+    socket.on("code-editor:send-cursor", (data) => {
+      io.to(project_id).emit("code-editor:receive-cursor", data);
+    });
+
+    socket.on("code-editor:remove-cursor", (data) => {
+      socket.broadcast.to(project_id).emit("code-editor:remove-cursor", data);
+    });
+
+    socket.on("code-editor:load-live-users", async ({ file_id }) => {
+      //send to personal
+      const allUsers = await getAllLiveUserInFile(file_id);
+      socket.emit("code-editor:load-live-users", { allUsers });
+    });
+
+    socket.on("code-editor:join-file", async ({ file_id }) => {
+      await insertLiveUser(project_id, file_id, username);
+
+      //send to all other users
+      const aUser = await getALiveUserInFile(file_id, username);
+      io.to(project_id).emit("code-editor:user-joined", { aUser });
+
+      socket.on("code-editor:leave-file", async ({ file_id }) => {
+        await removeLiveUser(file_id, username);
+        socket.broadcast
+          .to(project_id)
+          .emit("code-editor:user-left", { file_id, username });
+      });
+    });
+
+    socket.on("disconnect", async () => {
       socket.broadcast
         .to(project_id)
-        .emit("code-editor:receive-cursor", change);
-    });
-  });
+        .emit("editor:live-user-left", { username });
 
-  socket.on("disconnect", async () => {
-    console.log("Disconnect :", socket.id);
-    // if (socket.currentFile && socket.username) {
-    //   console.log(socket);
-    //   await removeActiveLiveUser(socket.username); //depened on currntfile
-    //   io.emit("userLeft-live", { username: socket.username });
-    // }
+      socket.broadcast
+        .to(project_id)
+        .emit("code-editor:remove-all-cursor", { username });
+
+      await removeActiveLiveUser(username);
+      socket.broadcast
+        .to(project_id)
+        .emit("code-editor:remove-active-live-user", { username });
+
+      console.log("Disconnect :", socket.id);
+    });
   });
 });
 

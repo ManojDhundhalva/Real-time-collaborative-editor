@@ -39,7 +39,7 @@ const MenuButton = styled(Button)({
   padding: "0 10px",
 });
 
-const Tools = ({ selectedFileId, files }) => {
+const Tools = ({ liveUsers }) => {
   const [contributor, setContributor] = useState("");
   const [open, setOpen] = React.useState(false);
 
@@ -208,6 +208,41 @@ const Tools = ({ selectedFileId, files }) => {
 
             {/* Right Section: Icons and Avatar */}
             <Box sx={{ display: "flex", alignItems: "center" }}>
+              {liveUsers &&
+                liveUsers?.length > 0 &&
+                liveUsers.map((liveUser, index) => (
+                  <Tooltip
+                    key={index}
+                    TransitionComponent={Zoom}
+                    title={
+                      window.localStorage.getItem("username") ===
+                      liveUser.username
+                        ? "You"
+                        : liveUser.username
+                    }
+                    placement="bottom"
+                    arrow
+                    componentsProps={{
+                      tooltip: {
+                        sx: {
+                          bgcolor: "common.black",
+                          "& .MuiTooltip-arrow": {
+                            color: "common.black",
+                          },
+                        },
+                      },
+                    }}
+                  >
+                    <Avatar
+                      key={index}
+                      sx={{ bgcolor: "green" }}
+                      alt={liveUser.username}
+                      src="/broken-image.jpg"
+                    >
+                      {liveUser.username[0].toUpperCase()}
+                    </Avatar>
+                  </Tooltip>
+                ))}
               <Button
                 onClick={handleClickOpen}
                 variant="outlined"

@@ -128,8 +128,58 @@ JOIN files AS f ON af.file_id = f.file_id
 WHERE af.username = $1;
 `;
 
+// const getFileTree = `
+// SELECT * FROM file_tree WHERE project_id = $1;
+// `;
+
 const getFileTree = `
-SELECT * FROM file_tree WHERE project_id = $1;
+SELECT 
+  ft.file_tree_id, 
+  ft.parent_id, 
+  ft.name, 
+  ft.is_folder, 
+  ft.file_tree_timestamp,
+  fteu.user_id,
+  CASE 
+    WHEN fteu.user_id IS NULL THEN false 
+    ELSE true 
+  END AS expand
+FROM 
+  file_tree AS ft 
+LEFT JOIN 
+  file_tree_expand_user AS fteu 
+ON 
+  ft.file_tree_id = fteu.file_tree_id
+WHERE 
+  ft.project_id = $1 
+  AND (fteu.user_id = $2 OR fteu.user_id IS NULL);
+`;
+
+const setAllFilesLive = `
+UPDATE live_users 
+SET is_live = TRUE 
+WHERE username = $1 AND project_id = $2;
+`;
+
+const getInitialTabs = `
+SELECT * FROM live_users AS lu JOIN files AS f ON lu.file_id = f.file_id WHERE lu.username = $1 AND lu.project_id = $2;
+`;
+
+const getLiveUsers = `
+SELECT DISTINCT username 
+FROM live_users 
+WHERE is_live = TRUE 
+AND project_id = $1;
+`;
+
+const insertExpandData = `
+  INSERT INTO file_tree_expand_user (user_id, file_tree_id)
+  VALUES ($1, $2)
+  ON CONFLICT (user_id, file_tree_id) DO NOTHING;
+`;
+
+const deleteExpandData = `
+  DELETE FROM file_tree_expand_user WHERE user_id = $1 AND file_tree_id = $2;
 `;
 
 module.exports = {
@@ -146,4 +196,9 @@ module.exports = {
   addFileTree,
   addFileTreeUser,
   getFileTree,
+  getInitialTabs,
+  setAllFilesLive,
+  getLiveUsers,
+  insertExpandData,
+  deleteExpandData,
 };

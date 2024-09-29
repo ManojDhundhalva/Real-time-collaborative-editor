@@ -1,37 +1,52 @@
-const useTraverseTree = (socket) => {
-  // Add a file or folder in tree
-  // Can be optimized using Dynamic Programming
+const useTraverseTree = () => {
+  // Add a file or folder in the tree
   const insertNode = function (tree, new_node) {
-    // Ensure items is an array
-    if (!tree.items) {
-      tree.items = [];
-    }
-
+    // If this node is the parent of the new node
     if (tree.id === new_node.parent_id && tree.isFolder) {
-      tree.items.unshift({
+      // Ensure tree.items is initialized as an array
+      tree.items = tree.items || [];
+
+      // Insert the new node into the items array
+      tree.items.push({
         id: new_node.file_tree_id,
         name: new_node.name,
         isFolder: new_node.is_folder,
         fileTreeTimestamp: new_node.file_tree_timestamp,
         parentId: new_node.parent_id,
-        items: [],
+        items: [], // New node starts with an empty array for its children
       });
-
-      return tree;
+      return tree; // Return the updated tree
     }
 
-    let latestNode = [];
-    // Ensure tree.items is an array before mapping
-    latestNode = tree.items.map((ob) => {
-      return insertNode(ob, new_node);
-    });
+    // If this node is not the parent, recursively traverse its children
+    if (tree.items && tree.items.length > 0) {
+      // Recursively try to insert the node in the child items
+      const updatedItems = tree.items.map((childNode) =>
+        insertNode(childNode, new_node)
+      );
 
-    return { ...tree, items: latestNode };
+      // Return the tree with updated children
+      return { ...tree, items: updatedItems };
+    }
+
+    // If no child nodes are found or this node is not the parent, return it unchanged
+    return tree;
   };
 
-  const deleteNode = () => {}; // Do it Yourself
+  // Delete a node (file/folder) from the tree
+  const deleteNode = function (tree, nodeId) {
+    // If the current node's children contain the nodeId, remove it
+    tree.items = tree.items.filter((child) => child.id !== nodeId);
 
-  const renameNode = () => {}; // Do it Yourself
+    // Recursively delete from children
+    if (tree.items && tree.items.length > 0) {
+      tree.items = tree.items.map((childNode) => deleteNode(childNode, nodeId));
+    }
+
+    return tree;
+  };
+  // const deleteNode = () => {}; // To be implemented
+  const renameNode = () => {}; // To be implemented
 
   return { insertNode, deleteNode, renameNode };
 };

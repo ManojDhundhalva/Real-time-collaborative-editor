@@ -40,11 +40,12 @@ CREATE TABLE IF NOT EXISTS live_users(
     is_active_in_tab BOOLEAN DEFAULT FALSE NOT NULL,
     is_live BOOLEAN DEFAULT FALSE NOT NULL,
     live_users_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (project_id, file_id, username)
+    PRIMARY KEY (file_id, username)
 );
 
 CREATE TABLE IF NOT EXISTS file_tree(
-    file_tree_id UUID PRIMARY KEY, -- in root file it will be parent_id == file_tree_id
+    file_tree_id UUID PRIMARY KEY, -- in root file it will be parent_id == file_tree_id == file_id
+    -- file_tree_id UUID REFERENCES files(file_id) PRIMARY KEY, -- in root file it will be parent_id == file_tree_id == file_id
     project_id UUID REFERENCES projects(project_id) NOT NULL,
     parent_id UUID REFERENCES file_tree(file_tree_id),  
     name VARCHAR(255) NOT NULL,
@@ -52,12 +53,11 @@ CREATE TABLE IF NOT EXISTS file_tree(
     file_tree_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS file_tree_user(
+CREATE TABLE IF NOT EXISTS file_tree_expand_user( -- only for folders
     user_id UUID REFERENCES users(id) NOT NULL,
     file_tree_id UUID REFERENCES file_tree(file_tree_id) NOT NULL,
-    is_expand BOOLEAN DEFAULT FALSE,
     PRIMARY KEY (user_id, file_tree_id),
-    file_tree_user_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    file_tree_expand_user TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- also add which project had which file for each database, like active_files, live_users
