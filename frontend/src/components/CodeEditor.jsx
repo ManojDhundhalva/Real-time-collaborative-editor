@@ -143,7 +143,7 @@ const CodeEditor = ({ socket, fileId, username, setTabs }) => {
 
   useEffect(() => {
     const userJoined = (data) => {
-      if (!data) return;
+      if (!data && !data?.aUser) return;
       const { aUser } = data;
       console.log("userJoined", aUser);
 

@@ -244,8 +244,12 @@ io.on("connection", (socket) => {
   //   // socket.leave(file_id);
   // });
 
-  socket.on("editor:join-project", ({ project_id, username }) => {
+  socket.on("editor:join-project", async ({ project_id, username }) => {
     socket.join(project_id);
+    await pool.query(
+      "INSERT INTO project_live_users (project_id, username) VALUES ($1, $2)",
+      [project_id, username]
+    );
     io.to(project_id).emit("editor:live-user-joined", { username });
 
     console.log("project_id", project_id);
@@ -302,6 +306,10 @@ io.on("connection", (socket) => {
     });
 
     socket.on("disconnect", async () => {
+      await pool.query(
+        "DELETE FROM project_live_users WHERE project_id = $1 AND username = $2",
+        [project_id, username]
+      );
       socket.broadcast
         .to(project_id)
         .emit("editor:live-user-left", { username });

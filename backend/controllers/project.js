@@ -115,17 +115,13 @@ const getProjectName = async (req, resp) => {
 };
 
 const addContributor = async (req, resp) => {
-  const { projectId, contributor } = req.body;
+  const { projectId, contributors } = req.body;
   try {
-    const results1 = await pool.query(queries.getContributorId, [contributor]);
+    for (const contributor of contributors) {
+      await pool.query(queries.addContributor, [projectId, contributor.id]);
+    }
 
-    const contributorId = results1.rows[0].id;
-    const results2 = await pool.query(queries.addContributor, [
-      projectId,
-      contributorId,
-    ]);
-
-    resp.status(200).json({ message: "Added contributor" });
+    resp.status(200).json({ message: "Added contributors" });
   } catch (err) {
     console.error("Error ->", err);
     resp.status(500).json({ message: "Internal Server Error" });
@@ -214,6 +210,20 @@ const setExpandData = async (req, resp) => {
   }
 };
 
+const userSearch = async (req, res) => {
+  const { q, projectId } = req.query; // Get the search term from query
+  try {
+    const result = await pool.query(
+      queries.userSearch,
+      [`%${q}%`, projectId] // Exclude the current user's username
+    );
+    res.json(result.rows); // Send back the rows
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 module.exports = {
   getAllProjects,
   addProject,
@@ -226,4 +236,5 @@ module.exports = {
   getInitialTabs,
   getLiveUsers,
   setExpandData,
+  userSearch,
 };

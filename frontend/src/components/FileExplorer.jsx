@@ -86,16 +86,21 @@ function FileExplorer(props) {
       authorization: `Bearer ${window.localStorage.getItem("token")}`,
     };
     try {
+      const s = `${
+        config.BACKEND_API || "http://localhost:8000"
+      }/project/get-file-tree?username=${window.localStorage.getItem(
+        "username"
+      )}&projectId=${projectId}`;
+
+      console.log(s);
       const { data } = await axios.get(
         `${
           config.BACKEND_API || "http://localhost:8000"
-        }/project/get-file-tree`,
+        }/project/get-file-tree?username=${window.localStorage.getItem(
+          "username"
+        )}&projectId=${projectId}`,
         {
           headers,
-          params: {
-            username: window.localStorage.getItem("username"),
-            projectId,
-          },
         }
       );
       console.log("data", data);

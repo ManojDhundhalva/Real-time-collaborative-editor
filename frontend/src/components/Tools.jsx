@@ -29,6 +29,7 @@ import { styled } from "@mui/system";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import config from "../config";
+import Contributor from "./Contributor";
 import toast from "react-hot-toast";
 
 // MenuButton component with custom styles
@@ -75,7 +76,7 @@ const Tools = ({ liveUsers }) => {
     }
   };
 
-  const addContributor = async () => {
+  const addContributor = async (contributors) => {
     const headers = {
       "Content-Type": "application/json",
       authorization: `Bearer ${window.localStorage.getItem("token")}`,
@@ -86,16 +87,20 @@ const Tools = ({ liveUsers }) => {
           `/project/add-contributor?username=${window.localStorage.getItem(
             "username"
           )}`,
-        { projectId, contributor },
+        { projectId, contributors },
         { headers }
       );
       console.log(results);
       toast.success(`Added, "${contributor}"`);
-      setContributor((prev) => "");
     } catch (err) {
       console.log("err ->", err);
       toast.success(`NOT Added, "${contributor}"`);
     }
+  };
+
+  const handleContributor = (contributors) => {
+    handleClose();
+    addContributor(contributors);
   };
 
   useEffect(() => {
@@ -122,46 +127,10 @@ const Tools = ({ liveUsers }) => {
             id="alert-dialog-description"
             sx={{ display: "flex", alignItems: "center" }}
           >
-            <TextField
-              color="primary"
-              value={contributor}
-              onChange={(e) => {
-                setContributor((prev) => e.target.value);
-              }}
-              id="contributor"
-              label="Contributor"
-              placeholder="Username"
-              variant="outlined"
-              fullWidth
-              size="small"
-              autoComplete="off"
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <PersonRoundedIcon sx={{ color: "#1976D2" }} />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                m: 1,
-                width: "380px",
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 3,
-                  fontWeight: "bold",
-                },
-              }}
+            <Contributor
+              projectId={projectId}
+              handleContributor={handleContributor}
             />
-            <Button
-              onClick={() => {
-                handleClose();
-                addContributor();
-              }}
-              variant="contained"
-              autoFocus
-              sx={{ borderRadius: 2 }}
-            >
-              Add
-            </Button>
           </DialogContentText>
         </DialogContent>
       </Dialog>

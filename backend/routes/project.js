@@ -19,5 +19,6 @@ router.get("/get-file-tree", verifyTokenAndAuthorization, controller.getFileTree
 router.get("/get-initial-tabs", verifyTokenAndAuthorization, controller.getInitialTabs);
 router.get("/get-live-users", verifyTokenAndAuthorization, controller.getLiveUsers);
 router.post("/set-expand-data", verifyTokenAndAuthorization, controller.setExpandData);
+router.get("/users/search", verifyTokenAndAuthorization, controller.userSearch);
 
 module.exports = router;

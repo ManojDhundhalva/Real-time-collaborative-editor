@@ -147,12 +147,11 @@ SELECT
 FROM 
   file_tree AS ft 
 LEFT JOIN 
-  file_tree_expand_user AS fteu 
+  (SELECT * FROM file_tree_expand_user WHERE user_id = $2) AS fteu 
 ON 
   ft.file_tree_id = fteu.file_tree_id
 WHERE 
-  ft.project_id = $1 
-  AND (fteu.user_id = $2 OR fteu.user_id IS NULL);
+  ft.project_id = $1;
 `;
 
 const setAllFilesLive = `
@@ -166,10 +165,9 @@ SELECT * FROM live_users AS lu JOIN files AS f ON lu.file_id = f.file_id WHERE l
 `;
 
 const getLiveUsers = `
-SELECT DISTINCT username 
-FROM live_users 
-WHERE is_live = TRUE 
-AND project_id = $1;
+SELECT username 
+FROM project_live_users 
+WHERE project_id = $1;
 `;
 
 const insertExpandData = `
@@ -180,6 +178,14 @@ const insertExpandData = `
 
 const deleteExpandData = `
   DELETE FROM file_tree_expand_user WHERE user_id = $1 AND file_tree_id = $2;
+`;
+
+const userSearch = `
+SELECT * FROM users 
+WHERE (firstname ILIKE $1 OR lastname ILIKE $1 OR username ILIKE $1)
+AND id NOT IN (
+    SELECT user_id FROM project_owners WHERE project_id = $2
+)
 `;
 
 module.exports = {
@@ -201,4 +207,5 @@ module.exports = {
   getLiveUsers,
   insertExpandData,
   deleteExpandData,
+  userSearch,
 };
