@@ -209,41 +209,6 @@ const deleteFileAndChildren = async (fileTreeId) => {
 io.on("connection", (socket) => {
   console.log("Connect-id :", socket.id);
 
-  // socket.on("joinFile", async ({ username, file_id }) => {
-  //   console.log("username", username);
-
-  //   // socket.join(file_id);
-  //   await insertLiveUser(file_id, username);
-
-  //   const person = await getLiveUsersInFile(file_id, username);
-  //   io.emit("userJoined", { person });
-  //   // socket.broadcast.to(fileId).emit("userJoined", { person });
-
-  //   // socket.currentFile = file_id;
-  //   socket.username = username;
-
-  //   socket.on("get-document", async ({ file_id }) => {
-  //     const data = await getData(file_id);
-  //     socket.emit("load-document", { data, file_id });
-  //   });
-
-  //   socket.on("send-changes", ({ delta, file_id }) => {
-  //     console.log("delta", delta);
-  //     socket.broadcast.emit("receive-changes", { delta, file_id });
-  //   });
-  // });
-
-  // socket.on("leaveFile", async ({ file_id, username }) => {
-  //   console.log("leave", file_id, username);
-  //   if (!file_id || !username) {
-  //     return;
-  //   }
-  //   await removeLiveUser(file_id, username);
-  //   io.emit("userLeft", { file_id, username });
-  //   // socket.broadcast.to(file).emit("userLeft", { file_id, username });
-  //   // socket.leave(file_id);
-  // });
-
   socket.on("editor:join-project", async ({ project_id, username }) => {
     socket.join(project_id);
     await pool.query(

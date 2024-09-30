@@ -4,6 +4,7 @@ import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 
 //imported
+import { SocketProvider } from "./context/socket";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "./context/auth";
 import { Toaster } from "react-hot-toast";
@@ -15,19 +16,21 @@ const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   // <React.StrictMode>
   <BrowserRouter>
-    <AuthProvider>
-      <App />
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          style: {
-            zIndex: 9999,
-            fontFamily: "Quicksand",
-            fontWeight: "600",
-          },
-        }}
-      />
-    </AuthProvider>
+    <SocketProvider>
+      <AuthProvider>
+        <App />
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            style: {
+              zIndex: 9999,
+              fontFamily: "Quicksand",
+              fontWeight: "600",
+            },
+          }}
+        />
+      </AuthProvider>
+    </SocketProvider>
   </BrowserRouter>
   // </React.StrictMode>
 );

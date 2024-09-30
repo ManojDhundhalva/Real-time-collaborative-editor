@@ -4,19 +4,17 @@ import { useNavigate } from "react-router-dom";
 import { Grid, Box, Typography } from "@mui/material";
 import FileExplorer from "../components/FileExplorer";
 import Tabs from "../components/Tabs";
-import { io } from "socket.io-client";
 import { useParams } from "react-router-dom";
-import { toast } from "react-hot-toast";
 import CodeEditor from "../components/CodeEditor";
 import Tools from "../components/Tools";
 import axios from "axios";
 import config from "../config";
+import { useSocket } from "../context/socket";
 
 function Editor() {
   const navigate = useNavigate();
   const [tabs, setTabs] = useState([]);
   const [selectedFileId, setSelectedFileId] = useState(null);
-  const [socket, setSocket] = useState(null);
   const [explorerData, setExplorerData] = useState({});
   const [initialTabs, setInitialTabs] = useState([]);
   const [liveUsers, setLiveUsers] = useState([]);
@@ -24,18 +22,7 @@ function Editor() {
   const params = useParams();
   const projectId = params?.projectId || null;
 
-  useEffect(() => {
-    const s = io("http://localhost:8000");
-
-    // s.on("connect_error", (err) => console.log(err));
-    // s.on("connect_failed", (err) => console.log(err));
-
-    setSocket((prev) => s);
-
-    return () => {
-      s.disconnect();
-    };
-  }, []);
+  const { socket } = useSocket();
 
   const getLiveUsers = async () => {
     const headers = {
