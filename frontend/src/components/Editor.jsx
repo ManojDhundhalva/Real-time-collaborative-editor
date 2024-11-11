@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import {
   Box,
-  Typography,
   Card,
-  CardActionArea,
   CardMedia,
-  CardContent,
+  Typography,
   IconButton,
+  CardContent,
+  CardActionArea,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import FileList from "./FileList";
@@ -14,15 +14,16 @@ import EditorTabs from "./EditorTabs";
 import TextEditor from "./TextEditor";
 import Tools from "./Tools";
 import { useParams } from "react-router-dom";
-import axios, { all } from "axios";
-import config from "../config";
-import { toast } from "react-hot-toast";
 import { io } from "socket.io-client";
+import Cookies from "js-cookie";
+import useAPI from "../hooks/api";
 
 function Editor() {
   const { projectId } = useParams();
   const [open, setOpen] = React.useState(false);
   const [socket, setSocket] = useState(null);
+
+  const { GET } = useAPI();
 
   useEffect(() => {
     const s = io("http://localhost:8000");
@@ -96,22 +97,12 @@ function Editor() {
   };
 
   const getAllFiles = async () => {
-    const headers = {
-      "Content-Type": "application/json",
-      authorization: `Bearer ${window.localStorage.getItem("token")}`,
-    };
     try {
-      const results = await axios.get(
-        (config.BACKEND_API || "http://localhost:8000") +
-          `/project/get-all-files?username=${window.localStorage.getItem(
-            "username"
-          )}&projectId=${projectId}`,
-        { headers }
-      );
+      const results = await GET("/project/get-all-files", { projectId });
       // const data = transformData(results.data);
       console.log("data", results.data);
       const { data } = results;
-      const specificUsername = window.localStorage.getItem("username");
+      const specificUsername = Cookies.get("username");
 
       const openFiles = data.filter(
         (file) =>
@@ -151,7 +142,7 @@ function Editor() {
     if (socket) {
       socket.emit("joinFile", {
         file_id: selectedFileId,
-        username: window.localStorage.getItem("username"),
+        username: Cookies.get("username"),
       });
     }
   }, [selectedFileId]);
@@ -180,9 +171,9 @@ function Editor() {
         prev.map((file) =>
           file.file_id === fileID
             ? {
-                ...file,
-                users: file.users.filter((user) => user.username !== username),
-              }
+              ...file,
+              users: file.users.filter((user) => user.username !== username),
+            }
             : file
         )
       );
@@ -264,7 +255,7 @@ function Editor() {
   return (
     <>
       <Tools selectedFileId={selectedFileId} files={allFiles} />
-      <div style={{ display: "flex", height: "100vh" }}>
+      <div style={{ display: "flex" }}>
         {/* File List */}
         <FileList
           getAllFiles={getAllFiles}

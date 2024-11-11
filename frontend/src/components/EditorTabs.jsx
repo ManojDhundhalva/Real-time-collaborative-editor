@@ -1,17 +1,18 @@
 import React, { useEffect } from "react";
 import {
-  Tabs,
   Tab,
-  IconButton,
   Box,
+  Tabs,
   Zoom,
-  Tooltip,
   Avatar,
+  Tooltip,
+  IconButton,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import ArticleRoundedIcon from "@mui/icons-material/ArticleRounded";
 import TextEditor from "./TextEditor";
-import { green, grey, pink } from "@mui/material/colors";
+import { green, grey } from "@mui/material/colors";
+import Cookies from "js-cookie";
 
 const EditorTabs = ({
   socket,
@@ -90,8 +91,7 @@ const EditorTabs = ({
                                     ? "2px double #0077b6"
                                     : "2px double grey",
                                   bgcolor: is_active_in_tab
-                                    ? username ===
-                                      window.localStorage.getItem("username")
+                                    ? username === Cookies.get("username")
                                       ? green[500]
                                       : green[200]
                                     : grey,

@@ -3,41 +3,69 @@ const queries = require("../queries/register");
 const bcrypt = require("bcrypt");
 const util = require("util");
 const { v4: uuidv4 } = require("uuid");
-
-require("dotenv").config();
+const jwt = require("jsonwebtoken");
+const config = require("../config");
 
 const saltRounds = 10;
 const hashAsync = util.promisify(bcrypt.hash);
 
-const createAccount = async (req, resp) => {
+const createAccount = async (req, res) => {
   const { firstname, lastname, username, emailid, password } = req.body;
+  const userAgent = req.headers["user-agent"];
+  const fingerprint = req.headers["x-fingerprint-id"];
 
-  if (!firstname || !lastname || !username || !emailid || !password) {
-    return resp.status(500).json({ message: "REQUEST - Fields are Empty!!" });
+  // Validate required fields
+  if (!firstname || !lastname || !username || !emailid || !password || !userAgent || !fingerprint) {
+    return res.status(400).json({ message: "All fields are required." });
   }
 
   try {
-    const results = await pool.query(queries.getUserName, [username, emailid]);
-    if (results.rows.length) {
-      return resp.status(209).json({ message: "User Already Exist!" });
+    // Check if the username or email already exists
+    const userCheck = await pool.query(queries.getUserName, [
+      username,
+      emailid,
+    ]);
+    if (userCheck.rows.length > 0) {
+      return res.status(409).json({ message: "User already exists." });
     }
 
-    const newPassword = await hashAsync(password, saltRounds);
+    // Hash the password
+    const hashedPassword = await hashAsync(password, saltRounds);
 
-    const uniqueId = uuidv4();
-    const createAccountResult = await pool.query(queries.createAccount, [
-      uniqueId,
+    // Create a new user with a unique ID
+    const userId = uuidv4();
+    await pool.query(queries.createAccount, [
+      userId,
       firstname,
       lastname,
       username,
       emailid,
-      newPassword,
+      hashedPassword,
     ]);
 
-    resp.status(201).json({ message: "Account Created Successfully!" });
+    const token = jwt.sign(
+      { id: userId, username, fingerprint, userAgent },
+      config.JWT_SECRET_KEY,
+      { expiresIn: "1d" }
+    );
+
+    res.cookie("authToken", token, {
+      path: "/", // This allows the cookie to be accessible on all routes
+      // httpOnly: true, // Protect cookie from XSS
+      maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
+      sameSite: "Strict", // Protect against CSRF
+    });
+
+    res.cookie("username", username, {
+      path: "/", // This allows the cookie to be accessible on all routes
+      maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
+      sameSite: "Strict", // Protect against CSRF
+    });
+
+    return res.status(201).json({ message: "Account created successfully." });
   } catch (error) {
-    console.error(error);
-    resp.status(500).json({ message: "DATABASE - Internal Server Error" });
+    console.error("Error creating account:", error);
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 

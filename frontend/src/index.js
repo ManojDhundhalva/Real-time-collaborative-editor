@@ -6,8 +6,9 @@ import reportWebVitals from "./reportWebVitals";
 //imported
 import { SocketProvider } from "./context/socket";
 import { BrowserRouter } from "react-router-dom";
-import { AuthProvider } from "./context/auth";
 import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "./context/auth";
+import { UserProvider } from "./context/user";
 
 //css
 import "./CSS/index.css";
@@ -16,21 +17,23 @@ const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   // <React.StrictMode>
   <BrowserRouter>
-    <SocketProvider>
-      <AuthProvider>
-        <App />
-        <Toaster
-          position="top-center"
-          toastOptions={{
-            style: {
-              zIndex: 9999,
-              fontFamily: "Quicksand",
-              fontWeight: "600",
-            },
-          }}
-        />
-      </AuthProvider>
-    </SocketProvider>
+    <AuthProvider>
+      <SocketProvider>
+        <UserProvider>
+          <App />
+          <Toaster
+            position="top-center"
+            toastOptions={{
+              style: {
+                zIndex: 9999,
+                fontFamily: "Quicksand",
+                fontWeight: "600",
+              },
+            }}
+          />
+        </UserProvider>
+      </SocketProvider>
+    </AuthProvider>
   </BrowserRouter>
   // </React.StrictMode>
 );

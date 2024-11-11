@@ -5,13 +5,15 @@ const { v4: uuidv4 } = require("uuid");
 const getAllProjects = async (req, resp) => {
   try {
     if (!req.user || !req.user.id) {
-      return resp.status(401).json({ message: "Unauthorized" });
+      return resp.status(401).json({ message: "Unauthorized access" });
     }
+
     const results = await pool.query(queries.getAllProjects, [req.user.id]);
-    resp.status(200).json(results.rows);
-  } catch (err) {
-    console.log("Error -> ", err);
-    resp.status(500).json({ message: "Internal Server Error" });
+
+    return resp.status(200).json(results.rows);
+  } catch (error) {
+    console.error("Error retrieving projects:", error);
+    return resp.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -19,42 +21,38 @@ const addProject = async (req, resp) => {
   const { projectName } = req.body;
 
   if (!projectName) {
-    return resp.status(400).json({ message: "Project name is required" });
+    return resp.status(400).json({ message: "Project name is required." });
   }
 
   try {
-    const uniqueId = uuidv4();
-    const results1 = await pool.query(queries.addProjects, [
-      uniqueId,
+    const projectId = uuidv4();
+
+    // Insert the project details
+    await pool.query(queries.addProjects, [
+      projectId,
       req.user.username,
       projectName,
     ]);
-    const results2 = await pool.query(queries.addProjectOwners, [
-      uniqueId,
-      req.user.id,
-    ]);
 
-    const uniqueIdFileTree = uuidv4();
-    const results3 = await pool.query(queries.addFileTree, [
-      uniqueIdFileTree,
-      uniqueId,
-      null,
+    // Associate the project with the owner
+    await pool.query(queries.addProjectOwners, [projectId, req.user.id]);
+
+    // Create the initial file tree structure for the project
+    const fileTreeId = uuidv4();
+    await pool.query(queries.addFileTree, [
+      fileTreeId,
+      projectId,
+      null, // Root directory (or null for no parent)
       projectName,
-      true,
+      true, // Indicates that this is a directory (root)
     ]);
 
-    // const results4 = await pool.query(queries.addFileTreeUser, [
-    //   req.user.id,
-    //   uniqueIdFileTree,
-    //   false,
-    // ]);
-
-    resp
-      .status(200)
-      .json({ project_id: uniqueId, message: "Project added successfully" });
-  } catch (err) {
-    console.error("Error ->", err);
-    resp.status(500).json({ message: "Internal Server Error" });
+    return resp
+      .status(201)
+      .json({ project_id: projectId, message: "Project added successfully." });
+  } catch (error) {
+    console.error("Error adding project:", error);
+    return resp.status(500).json({ message: "Internal Server Error." });
   }
 };
 
@@ -64,7 +62,7 @@ const getAllFiles = async (req, resp) => {
   }
 
   try {
-    await pool.query(queries.makeAllActiveFilesToLive, [req.query.username]);
+    await pool.query(queries.makeAllActiveFilesToLive, [req.user.username]);
 
     const results = await pool.query(queries.getAllFiles, [
       req.query.projectId,
@@ -217,7 +215,29 @@ const userSearch = async (req, res) => {
       queries.userSearch,
       [`%${q}%`, projectId] // Exclude the current user's username
     );
-    res.json(result.rows); // Send back the rows
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const getLogs = async (req, res) => {
+  const { file_id } = req.query;
+  try {
+    const result = await pool.query(queries.getLogs, [file_id]);
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const getMessages = async (req, res) => {
+  const { project_id } = req.query;
+  try {
+    const result = await pool.query(queries.getMessages, [project_id]);
+    res.status(200).json(result.rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal server error" });
@@ -237,4 +257,6 @@ module.exports = {
   getLiveUsers,
   setExpandData,
   userSearch,
+  getLogs,
+  getMessages,
 };

@@ -1,17 +1,10 @@
 import React, { useEffect } from "react";
-import { useAuth } from "../context/auth";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../CSS/AboutUs.css";
 
 function AboutUS() {
-  const { validateUser } = useAuth();
-
-  useEffect(() => {
-    validateUser();
-  });
-
   useEffect(() => {
     AOS.init({
       duration: 800,

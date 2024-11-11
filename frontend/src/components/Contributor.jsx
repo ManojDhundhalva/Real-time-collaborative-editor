@@ -1,26 +1,36 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  TextField,
+  Box,
   Chip,
   List,
-  ListItem,
-  ListItemText,
-  Box,
-  InputAdornment,
   Button,
+  ListItem,
+  TextField,
+  ListItemText,
+  InputAdornment,
   ListItemAvatar,
+  Typography,
 } from "@mui/material";
 import { Avatar } from "@mui/material";
 import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
-import axios from "axios"; // Import Axios
+import useAPI from "../hooks/api";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
+import CircularProgress from "@mui/material/CircularProgress";
+import { toast } from "react-hot-toast";
 
 function Contributor(props) {
-  const { projectId, handleContributor } = props;
+  const { projectId, handleClose } = props;
   const [searchTerm, setSearchTerm] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [selectedUserSet, setSelectedUserSet] = useState(new Set());
   const [activeSuggestion, setActiveSuggestion] = useState(0);
+  const [isAddingContributor, setIsAddingContributor] = useState(false);
+  const [justVerify, setJustVerify] = useState(false);
+  const [isFetchingUsers, setIsFetchingUsers] = useState(false);
+
+  const { GET, POST } = useAPI();
 
   const inputRef = useRef(null);
 
@@ -31,23 +41,16 @@ function Contributor(props) {
         setSuggestions([]);
         return;
       }
-
-      const headers = {
-        "Content-Type": "application/json",
-        authorization: `Bearer ${window.localStorage.getItem("token")}`,
-      };
-
+      setIsFetchingUsers(true);
+      const fetchUsersData = { q: searchTerm, projectId };
       try {
-        const response = await axios.get(
-          `http://localhost:8000/project/users/search?username=${window.localStorage.getItem(
-            "username"
-          )}&q=${searchTerm}&projectId=${projectId}`,
-          { headers }
-        );
+        const response = await GET("/project/users/search", fetchUsersData);
         console.log(response.data);
         setSuggestions(response.data); // Use the data directly
       } catch (err) {
         console.error(err);
+      } finally {
+        setIsFetchingUsers(false);
       }
     };
 
@@ -91,113 +94,183 @@ function Contributor(props) {
     }
   };
 
+  const addContributor = async (contributors) => {
+    setIsAddingContributor(true);
+    try {
+      const results = await POST("/project/add-contributor", { projectId, contributors });
+      console.log(results);
+      toast.success(`Added, "${contributors.length}"`);
+    } catch (err) {
+      console.log("err ->", err);
+      toast.success(`NOT Added, "${contributors.length}"`);
+    } finally {
+      setIsAddingContributor(false);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (selectedUsers.length === 0) {
+      setJustVerify(true);
+      return;
+    }
+    addContributor(selectedUsers)
+  }
+
   return (
-    <Box
-      sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1 }}
-    >
+    <Box sx={{
+      minWidth: "300px",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      zIndex: 1000,
+      bgcolor: "rgb(245, 245, 245)",
+      transform: "translate(-50%, -50%)",
+      p: 3,
+      borderRadius: "10px",
+      border: "1px solid #8C8C8C",
+      // boxShadow: "rgba(0, 0, 0, 0.02) 0px 1px 3px 0px, rgba(27, 31, 35, 0.15) 0px 0px 0px 1px"
+    }}>
+      <Box onClick={handleClose} sx={{
+        m: 1,
+        position: "absolute",
+        top: 0,
+        right: 0,
+        cursor: "pointer",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+      }}>
+        <button style={{ padding: 0 }}>
+          <CloseRoundedIcon fontSize="small" sx={{ color: "black" }} />
+        </button>
+      </Box>
+      <Box sx={{ m: 3 }}>
+        <Typography fontWeight="bold" fontSize="xx-large">Add Contributors</Typography>
+      </Box>
       {/* Pills */}
-      {selectedUsers.map((user) => (
-        <Chip
-          key={user.emailid} // Adjusted for emailid
-          label={`${user.firstname} ${user.lastname}`} // Adjusted for firstname and lastname
-          onDelete={() => handleRemoveUser(user)}
-          avatar={<Avatar src={user.image || ""} />} // Adjusted for image, provide a default if necessary
-          sx={{ height: "40px", display: "flex", alignItems: "center" }}
-        />
-      ))}
-      {/* Input field with search suggestions */}
-      <Box
-        sx={{
-          position: "relative",
-          width: "100%",
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
+      {selectedUsers.length ? selectedUsers.map((user, index) => (
+        <Box sx={{ my: "2px", mx: "4px" }} key={index}>
+          <Chip
+            label={`${user.firstname} ${user.lastname}`} // Adjusted for firstname and lastname
+            onDelete={() => handleRemoveUser(user)}
+            avatar={<Avatar src={user.image || ""} sx={{ color: "#333333" }} />}
+            sx={{
+              height: "40px", display: "flex", alignItems: "center",
+              "& .MuiChip-deleteIcon": {
+                color: "#4D4D4D", // Customize the color of the close icon
+                fontSize: "20px", // Adjust the icon size if needed
+                "&:hover": {
+                  color: "black", // Change color on hover for effect
+                },
+              },
+            }}
+          />
+        </Box>
+      )) : null}
+      <form onSubmit={handleSubmit} style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <Box sx={{ m: 2 }}>
           <TextField
+            autoFocus
             inputRef={inputRef}
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => { setSearchTerm(e.target.value); setJustVerify(false); }}
             id="contributors"
             label="Contributors"
             placeholder="Search For a User..."
             onKeyDown={handleKeyDown}
             fullWidth
-            variant="outlined"
             size="small"
-            autoComplete="off"
+            autoComplete="on"
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <PersonRoundedIcon sx={{ color: "#1976D2" }} />
+                  <PersonRoundedIcon sx={{ color: "#333333" }} />
                 </InputAdornment>
               ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <button style={{ fontWeight: "bold", margin: 0, borderRadius: 10 }}>
+                    {isAddingContributor ? (
+                      <>
+                        Adding... &nbsp;&nbsp;
+                        <CircularProgress
+                          size={20}
+                          thickness={6}
+                          sx={{
+                            color: "black",
+                            '& circle': { strokeLinecap: 'round' },
+                          }}
+                        />
+                      </>
+                    ) : (
+                      "Add"
+                    )}
+                  </button>
+                </InputAdornment>
+              )
             }}
+            error={
+              justVerify && (selectedUsers.length === 0)
+            }
+            helperText={
+              justVerify &&
+              (selectedUsers.length === 0 ? "Please select atleast a user." : "")
+            }
             sx={{
-              m: 1,
-              width: "380px",
+              color: "black",
               "& .MuiOutlinedInput-root": {
                 borderRadius: 3,
                 fontWeight: "bold",
+                "&.Mui-focused fieldset": {
+                  borderColor: "black", // Keep the border color when focused
+                },
+              },
+              "& .MuiInputLabel-root": {
+                color: "black", // Change the label color
+                "&.Mui-focused": {
+                  color: "black", // Change the label color
+                },
               },
             }}
           />
-          <Button
-            onClick={() => {
-              handleContributor(selectedUsers);
-            }}
-            variant="contained"
-            autoFocus
-            sx={{ borderRadius: 2 }}
-          >
-            Add
-          </Button>
         </Box>
-        {/* Search Suggestions */}
-        {suggestions.length > 0 && (
-          <Box
-            // id="style-1"
-            sx={{
-              maxHeight: "300px",
-              overflowY: "auto",
-              top: "100%",
-              left: 0,
-              right: 0,
-              bgcolor: "background.paper",
-              border: "1px solid #ccc",
-              borderRadius: "4px",
-              boxShadow: 3,
-            }}
-          >
-            <List sx={{ padding: 1, margin: 0 }}>
-              {suggestions.map(
-                (user, index) =>
-                  !selectedUserSet.has(user.emailid) && ( // Adjusted for emailid
-                    <ListItem
-                      sx={{ borderRadius: 1 }}
-                      button
-                      key={user.emailid} // Adjusted for emailid
-                      selected={index === activeSuggestion}
-                      onClick={() => handleSelectUser(user)}
-                    >
-                      <ListItemAvatar>
-                        <Avatar src={user.image} />
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={`${user.firstname} ${user.lastname}`} // Adjusted for firstname and lastname
-                      />
-                    </ListItem>
-                  )
-              )}
-            </List>
-          </Box>
+      </form>
+      {isFetchingUsers ?
+        (<CircularProgress
+          size={20}
+          thickness={7}
+          sx={{
+            color: "black",
+            '& circle': { strokeLinecap: 'round' },
+          }}
+        />) : (suggestions.length > selectedUsers.length ? (
+          suggestions.map((user, index) =>
+            !selectedUserSet.has(user.emailid) && (
+              <Box key={index} sx={{ width: "100%", px: 2 }}>
+                <button
+                  style={{ width: "100%", display: "flex", justifyContent: "flex-start", margin: 1 }}
+                  selected={index === activeSuggestion}
+                  onClick={() => handleSelectUser(user)}
+                >
+                  <Box>
+                    <Avatar src={user.image} sx={{ color: "grey" }} />
+                  </Box>
+                  <Box sx={{ mx: 1 }}>
+                    <Typography fontWeight="bold">
+                      {user.firstname} {user.lastname}
+                    </Typography>
+                  </Box>
+                </button>
+              </Box>
+            )))
+          : null
         )}
-      </Box>
-    </Box>
+    </Box >
   );
 }
 

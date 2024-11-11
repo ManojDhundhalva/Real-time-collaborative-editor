@@ -10,7 +10,7 @@ const Navbar = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [prevScrollPos, setPrevScrollPos] = useState(window.pageYOffset);
   const [showNavbar, setShowNavbar] = useState(true);
-  const { isLoggedIn, LogOut } = useAuth();
+  const { LogOut } = useAuth();
   const navigate = useNavigate();
 
   const handleMenuOpen = (event) => {
@@ -115,67 +115,45 @@ const Navbar = () => {
                 About Us
               </Link>
             </Button>
-            {isLoggedIn ? (
-              <div>
-                <IconButton
-                  size="large"
-                  aria-label="account of current user"
-                  aria-controls="menu-appbar"
-                  aria-haspopup="true"
-                  onClick={handleMenuOpen}
-                  color="inherit"
-                >
-                  <AccountCircleOutlinedIcon fontSize="large" sx={linkStyles} />
-                </IconButton>
-                <Menu
-                  id="menu-appbar"
-                  anchorEl={anchorEl}
-                  anchorOrigin={{ vertical: "top", horizontal: "right" }}
-                  keepMounted
-                  transformOrigin={{ vertical: "top", horizontal: "right" }}
-                  open={Boolean(anchorEl)}
-                  onClose={handleMenuClose}
-                >
-                  <MenuItem
-                    onClick={handleMenuClose}
-                    sx={{ fontWeight: "bold", color: "#134611" }}
-                  >
-                    <Link className="nav-link" to="/profile">
-                      Profile
-                    </Link>
-                  </MenuItem>
-                  <MenuItem
-                    sx={{ fontWeight: "bold", color: "#134611" }}
-                    onClick={() => {
-                      handleMenuClose();
-                      LogOut();
-                      navigate("/");
-                    }}
-                  >
-                    Logout
-                  </MenuItem>
-                </Menu>
-              </div>
-            ) : (
-              <Button
-                disableRipple
-                variant="outlined"
-                color="success"
-                sx={{
-                  "&:hover": {
-                    borderRadius: "5px",
-                  },
-                }}
+            <div>
+              <IconButton
+                size="large"
+                aria-label="account of current user"
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+                onClick={handleMenuOpen}
+                color="inherit"
               >
-                <Link
-                  className="nav-link"
-                  to="/login"
-                  style={{ ...linkStyles, fontWeight: "bold" }}
+                <AccountCircleOutlinedIcon fontSize="large" sx={linkStyles} />
+              </IconButton>
+              <Menu
+                id="menu-appbar"
+                anchorEl={anchorEl}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
+                keepMounted
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
+                open={Boolean(anchorEl)}
+                onClose={handleMenuClose}
+              >
+                <MenuItem
+                  onClick={handleMenuClose}
+                  sx={{ fontWeight: "bold", color: "#134611" }}
                 >
-                  Log In / Sign Up
-                </Link>
-              </Button>
-            )}
+                  <Link className="nav-link" to="/profile">
+                    Profile
+                  </Link>
+                </MenuItem>
+                <MenuItem
+                  sx={{ fontWeight: "bold", color: "#134611" }}
+                  onClick={() => {
+                    handleMenuClose();
+                    LogOut();
+                  }}
+                >
+                  Logout
+                </MenuItem>
+              </Menu>
+            </div>
           </ul>
         </div>
       </div>

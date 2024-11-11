@@ -7,9 +7,42 @@ import Tabs from "../components/Tabs";
 import { useParams } from "react-router-dom";
 import CodeEditor from "../components/CodeEditor";
 import Tools from "../components/Tools";
-import axios from "axios";
-import config from "../config";
 import { useSocket } from "../context/socket";
+import useAPI from "../hooks/api";
+import Cookies from "js-cookie";
+import DataObjectRoundedIcon from '@mui/icons-material/DataObjectRounded';
+import DataArrayRoundedIcon from '@mui/icons-material/DataArrayRounded';
+import FormatQuoteRoundedIcon from '@mui/icons-material/FormatQuoteRounded';
+import TextsmsRoundedIcon from '@mui/icons-material/TextsmsRounded';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import Chat from "../components/Chat";
+
+const styles = {
+  container: {
+    display: "flex",
+    height: "100%",
+  },
+  sidebar: {
+    minWidth: "200px",
+    backgroundColor: "#f0f0f0",
+    color: "white",
+    overflowY: "auto",
+    transition: "width 0.2s ease",
+  },
+  dragHandle: {
+    width: "5px",
+    cursor: "ew-resize",
+    backgroundColor: "#666",
+    zIndex: 10,
+  },
+  mainContent: {
+    flexGrow: 1,
+    backgroundColor: "#f0f0f0",
+    width: "100%",
+    height: "100%",
+  },
+};
+
 
 function Editor() {
   const navigate = useNavigate();
@@ -19,25 +52,15 @@ function Editor() {
   const [initialTabs, setInitialTabs] = useState([]);
   const [liveUsers, setLiveUsers] = useState([]);
 
+  const { GET } = useAPI();
   const params = useParams();
   const projectId = params?.projectId || null;
 
   const { socket } = useSocket();
 
   const getLiveUsers = async () => {
-    const headers = {
-      "Content-Type": "application/json",
-      authorization: `Bearer ${window.localStorage.getItem("token")}`,
-    };
-
     try {
-      const results = await axios.get(
-        (config.BACKEND_API || "http://localhost:8000") +
-          `/project/get-live-users?username=${window.localStorage.getItem(
-            "username"
-          )}&projectId=${projectId}`,
-        { headers }
-      );
+      const results = await GET("/project/get-live-users", { projectId });
       console.log("getLiveUsers", results.data);
       setLiveUsers((prev) => results.data);
     } catch (error) {
@@ -85,7 +108,7 @@ function Editor() {
     if (!socket) return;
     socket.emit("editor:join-project", {
       project_id: projectId,
-      username: window.localStorage.getItem("username"),
+      username: Cookies.get("username"),
     });
   }, [socket]);
 
@@ -129,18 +152,8 @@ function Editor() {
   };
 
   const getInitialTabs = async () => {
-    const headers = {
-      "Content-Type": "application/json",
-      authorization: `Bearer ${window.localStorage.getItem("token")}`,
-    };
     try {
-      const results = await axios.get(
-        (config.BACKEND_API || "http://localhost:8000") +
-          `/project/get-initial-tabs?username=${window.localStorage.getItem(
-            "username"
-          )}&projectId=${projectId}`,
-        { headers }
-      );
+      const results = await GET("/project/get-initial-tabs", { projectId });
       console.log(results.data);
 
       const data = results.data.map((file) => ({
@@ -189,30 +202,161 @@ function Editor() {
     socket.emit("code-editor:join-file", { file_id: selectedFileId });
   }, [selectedFileId]);
 
+  const sidebarRef = useRef(null);
+  const containerRef = useRef(null);
+  const isDragging = useRef(false); // We use refs instead of state to avoid re-renders
+
+  const handleMouseDown = () => {
+    isDragging.current = true;
+    document.body.style.cursor = "ew-resize";
+    document.getElementById("dragHandle").style.backgroundColor = "black";
+    document.getElementById("dragHandle").style.border = "2px solid white";
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging.current || !sidebarRef.current || !containerRef.current) return;
+
+    const newWidth = e.clientX;
+    if (newWidth > 100 && newWidth < 600) { // Set min and max width for sidebar
+      sidebarRef.current.style.width = `${newWidth}px`;
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (isDragging.current) {
+      isDragging.current = false;
+      document.body.style.cursor = "default";
+      document.getElementById("dragHandle").style.backgroundColor = "#666";
+      document.getElementById("dragHandle").style.border = "none";
+    }
+  };
+
+  // Adding event listeners when the component mounts
+  React.useEffect(() => {
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+
+    // Cleanup the event listeners when the component unmounts
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
+  const [iconIndex, setIconIndex] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIconIndex((prevIndex) => (prevIndex + 1) % 4); // Cycle through 0, 1, 2
+    }, 1000); // Switch every 1 second
+
+    return () => clearInterval(interval); // Cleanup interval on component unmount
+  }, []);
+
+  const renderIcon = () => {
+    switch (iconIndex) {
+      case 0:
+        return <DataObjectRoundedIcon sx={{ fontSize: "2em" }} />;
+      case 1:
+        return <i class="fa-solid fa-code" style={{ fontSize: "1.5em" }}></i>;
+      case 2:
+        return <DataArrayRoundedIcon sx={{ fontSize: "2em" }} />;
+      case 3:
+        return <FormatQuoteRoundedIcon sx={{ fontSize: "2em" }} />
+      default:
+        return null;
+    }
+  };
+
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const chatRef = useRef(null);
+
+  const handleCloseChat = () => setIsChatOpen((prev) => false);
+
+  useEffect(() => {
+    // Function to handle keydown event
+    const handleEsc = (event) => {
+      if (event.key === "Escape") {
+        handleCloseChat(); // Call the function on pressing Escape
+      }
+    };
+
+    // Add event listener for keydown
+    document.addEventListener("keydown", handleEsc);
+
+    // Cleanup event listener on component unmount
+    return () => {
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [handleCloseChat]);
+
   return (
-    <Grid
-      container
-      direction="column"
-      sx={{ height: "100", overflow: "hidden" }}
-    >
-      <Grid item>
-        <Box sx={{ padding: 1, backgroundColor: "#f5f5f5" }}>
-          <Tools liveUsers={liveUsers} />
+    <div style={{ height: "100vh" }}>
+      {isChatOpen ? (
+        <Box sx={{ position: 'fixed', left: 6, bottom: 6, zIndex: 9999 }}>
+          {/* Outer Box Container */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              width: '100%',
+              maxHeight: 'calc(100vh - 12px)',
+              minWidth: '400px',
+              bgcolor: '#F2F2F2',
+              borderRadius: '10px',
+              border: '1px solid black',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Header Section */}
+            <Box
+              sx={{
+                borderBottom: '2px solid #E6E6E6',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                py: 0,
+                px: "10px",
+              }}
+            >
+              <Typography variant="h6">Chat</Typography>
+              <CloseRoundedIcon
+                onClick={() => setIsChatOpen(false)}
+                sx={{
+                  p: '4px',
+                  cursor: 'pointer',
+                  fontWeight: "bold",
+                  color: 'black',
+                  borderRadius: '4px',
+                  '&:hover': { bgcolor: '#CCCCCC' },
+                }}
+              />
+            </Box>
+
+            {/* Chat Content Section */}
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                width: '100%',
+                flexGrow: 1,
+                height: '100%', // Ensures the chat area uses all remaining space
+                overflowY: 'auto',
+              }}
+            >
+              <Chat socket={socket} projectId={projectId} />
+            </Box>
+          </Box>
         </Box>
-      </Grid>
-      <Grid container item sx={{ flexGrow: 1, overflow: "hidden" }}>
-        <Grid
-          item
-          xs={3}
-          sx={{
-            height: "100%",
-            backgroundColor: "lavender",
-            overflowY: "auto",
-          }}
-        >
-          <Typography variant="h6" sx={{ paddingBottom: 1 }}>
-            Explorer
-          </Typography>
+      ) : (
+        <Box onClick={() => setIsChatOpen(true)} sx={{ "&:hover": { bgcolor: "#595959", color: "black" }, backgroundColor: "#404040", position: "fixed", left: 20, bottom: 20, p: "8px", borderRadius: 9, cursor: "pointer" }}>
+          <TextsmsRoundedIcon sx={{ color: "white" }} />
+        </Box>
+      )}
+      <Tools liveUsers={liveUsers} />
+      <div ref={containerRef} style={styles.container}>
+        <div ref={sidebarRef} style={styles.sidebar}>
           <FileExplorer
             tabs={tabs}
             setTabs={setTabs}
@@ -223,57 +367,147 @@ function Editor() {
             explorerData={explorerData}
             setExplorerData={setExplorerData}
           />
-        </Grid>
-        <Grid
-          item
-          xs={9}
-          sx={{ height: "100%", padding: 0, width: "100%", overflow: "hidden" }}
-        >
-          <Grid>
-            <Tabs
-              tabs={tabs}
-              setTabs={setTabs}
-              selectedFileId={selectedFileId}
-              handleFileClick={handleFileClick}
-              handleCloseTab={handleCloseTab}
-            />
-          </Grid>
-
-          <Grid sx={{ overflowY: "auto", width: "100%", height: "100%" }}>
-            {tabs.length > 0 &&
-              tabs.map(
-                (tab) =>
-                  tab && (
-                    <div
-                      key={tab.id}
-                      style={{
-                        position: "relative",
-                        width: "100%",
-                      }}
-                    >
-                      <div
-                        style={{
-                          position: "abosulte",
-                          zIndex: tab.id === selectedFileId ? 100 : 0,
+        </div>
+        <div id="dragHandle" style={styles.dragHandle} onMouseDown={handleMouseDown} />
+        <div style={styles.mainContent}>
+          {tabs.length === 0 ? (
+            <Box sx={{ height: "100%", display: "grid", placeItems: "center" }}>
+              <Typography variant="h2" sx={{ display: "flex", alignItems: "center" }}>
+                {renderIcon()}
+                <span style={{ marginLeft: "0.5em" }}>Workspace</span>
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              <Box>
+                <Tabs
+                  tabs={tabs}
+                  setTabs={setTabs}
+                  selectedFileId={selectedFileId}
+                  handleFileClick={handleFileClick}
+                  handleCloseTab={handleCloseTab}
+                />
+              </Box>
+              <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
+                {tabs.length > 0 &&
+                  tabs.map((tab) =>
+                    tab && (
+                      <Box
+                        key={tab.id}
+                        sx={{
                           width: "100%",
-                          backgroundColor: "grey",
+                          height: "100%",
+                          position: "absolute",
                         }}
                       >
-                        <div>{tab.name}</div>
-                        <CodeEditor
-                          socket={socket}
-                          fileId={tab.id}
-                          username={window.localStorage.getItem("username")}
-                          setTabs={setTabs}
-                        />
-                      </div>
-                    </div>
-                  )
-              )}
-          </Grid>
-        </Grid>
-      </Grid>
-    </Grid>
+                        <Box
+                          sx={{
+                            width: "100%",
+                            height: "100%",
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            backgroundColor: "black",
+                            zIndex: tab.id === selectedFileId ? 100 : 0,
+                          }}
+                        >
+                          <CodeEditor
+                            fileName={tab.name}
+                            socket={socket}
+                            fileId={tab.id}
+                            username={Cookies.get("username")}
+                            setTabs={setTabs}
+                          />
+                        </Box>
+                      </Box>
+                    )
+                  )}
+              </Box>
+            </>
+          )}
+        </div>
+      </div>
+    </div >
+    // <Grid
+    //   container
+    //   direction="column"
+    //   sx={{ height: "100", overflow: "hidden" }}
+    // >
+    //   <Tools liveUsers={liveUsers} />
+    //   <Grid container item sx={{ flexGrow: 1, overflow: "hidden" }}>
+    //     <Grid
+    //       item
+    //       xs={3}
+    //       sx={{
+    //         height: "100%",
+    //         backgroundColor: "lavender",
+    //         overflowY: "auto",
+    //       }}
+    //     >
+    //       <Typography variant="h6" sx={{ paddingBottom: 1 }}>
+    //         Explorer
+    //       </Typography>
+    //       <FileExplorer
+    //         tabs={tabs}
+    //         setTabs={setTabs}
+    //         socket={socket}
+    //         projectId={projectId}
+    //         handleFileClick={handleFileClick}
+    //         selectedFileId={selectedFileId}
+    //         explorerData={explorerData}
+    //         setExplorerData={setExplorerData}
+    //       />
+    //     </Grid>
+    //     <Grid
+    //       item
+    //       xs={9}
+    //       sx={{ height: "100%", padding: 0, width: "100%", overflow: "hidden" }}
+    //     >
+    //       <Grid>
+    //         <Tabs
+    //           tabs={tabs}
+    //           setTabs={setTabs}
+    //           selectedFileId={selectedFileId}
+    //           handleFileClick={handleFileClick}
+    //           handleCloseTab={handleCloseTab}
+    //         />
+    //       </Grid>
+
+    //       <Grid sx={{ overflowY: "auto", width: "100%", height: "100%" }}>
+    //         {tabs.length > 0 &&
+    //           tabs.map(
+    //             (tab) =>
+    //               tab && (
+    //                 <div
+    //                   key={tab.id}
+    //                   style={{
+    //                     position: "relative",
+    //                     width: "100%",
+    //                   }}
+    //                 >
+    //                   <div
+    //                     style={{
+    //                       position: "abosulte",
+    //                       zIndex: tab.id === selectedFileId ? 100 : 0,
+    //                       width: "100%",
+    //                       backgroundColor: "grey",
+    //                     }}
+    //                   >
+    //                     <div>{tab.name}</div>
+    //                     <CodeEditor
+    //                       socket={socket}
+    //                       fileId={tab.id}
+    //                       username={window.localStorage.getItem("username")}
+    //                       setTabs={setTabs}
+    //                     />
+    //                   </div>
+    //                 </div>
+    //               )
+    //           )}
+    //       </Grid>
+    //     </Grid>
+    //   </Grid>
+    // </Grid>
   );
 }
 

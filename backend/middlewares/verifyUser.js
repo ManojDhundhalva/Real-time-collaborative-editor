@@ -1,29 +1,34 @@
 const jwt = require("jsonwebtoken");
-require("dotenv").config();
+const config = require("../config");
 
-const verifyToken = (req, resp, next) => {
-  const authHeader = req.headers.authorization;
+const verifyToken = (req, res, next) => {
+  const token = req.cookies.authToken;
+  const username = req.cookies.username;
 
-  if (!authHeader) {
-    return resp.status(404).json({ message: "You are not authenticated!" });
+  if (!token || !username) {
+    return res.status(401).json({ message: "Authentication required." });
   }
 
-  const token = authHeader.split(" ")[1];
-  jwt.verify(token, process.env.JWT_SECRET_KEY, (err, user) => {
+  // Verify the token
+  jwt.verify(token, config.JWT_SECRET_KEY, (err, user) => {
     if (err) {
-      return resp.status(403).json({ message: "Token is not valid!" });
+      return res.status(403).json({ message: "Invalid or expired token." });
     }
     req.user = user;
     next();
   });
 };
 
-const verifyTokenAndAuthorization = (req, resp, next) => {
-  verifyToken(req, resp, () => {
-    if (String(req.user.username) === String(req.query.username)) {
+const verifyTokenAndAuthorization = (req, res, next) => {
+  verifyToken(req, res, () => {
+    const isUserAgentValid = String(req.user.userAgent) === String(req.headers["user-agent"]);
+    const isFingerprintValid = String(req.user.fingerprint) === String(req.headers["x-fingerprint-id"]);
+    const isUsernameValid = String(req.user.username) === String(req.cookies.username);
+
+    if (isUserAgentValid && isFingerprintValid && isUsernameValid) {
       next();
     } else {
-      resp.status(404).json({ message: "You are not allowed to do that!" });
+      return res.status(403).json({ message: "Access denied. Authorization failed." });
     }
   });
 };

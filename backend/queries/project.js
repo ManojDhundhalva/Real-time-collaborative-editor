@@ -188,24 +188,34 @@ AND id NOT IN (
 )
 `;
 
+const getLogs = `
+SELECT * FROM logs WHERE file_id = $1;
+`;
+
+const getMessages = `   
+SELECT * FROM chat WHERE project_id = $1;
+`;
+
 module.exports = {
-  getAllProjects,
-  addProjects,
-  addProjectOwners,
-  makeAllActiveFilesToLive,
-  getAllFiles,
-  createANewFile,
-  getProjectName,
-  getContributorId,
-  addContributor,
-  getAllActiveFiles,
-  addFileTree,
-  addFileTreeUser,
-  getFileTree,
-  getInitialTabs,
-  setAllFilesLive,
-  getLiveUsers,
-  insertExpandData,
-  deleteExpandData,
-  userSearch,
+    getAllProjects,
+    addProjects,
+    addProjectOwners,
+    makeAllActiveFilesToLive,
+    getAllFiles,
+    createANewFile,
+    getProjectName,
+    getContributorId,
+    addContributor,
+    getAllActiveFiles,
+    addFileTree,
+    addFileTreeUser,
+    getFileTree,
+    getInitialTabs,
+    setAllFilesLive,
+    getLiveUsers,
+    insertExpandData,
+    deleteExpandData,
+    userSearch,
+    getLogs,
+    getMessages,
 };

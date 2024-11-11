@@ -27,10 +27,65 @@ import Avatar from "@mui/material/Avatar";
 import DescriptionIcon from "@mui/icons-material/Description";
 import { styled } from "@mui/system";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
-import config from "../config";
 import Contributor from "./Contributor";
-import toast from "react-hot-toast";
+import useAPI from "../hooks/api";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
+import CircularProgress from "@mui/material/CircularProgress";
+import { useRef } from "react";
+import AccountBoxRoundedIcon from "@mui/icons-material/AccountBoxRounded"
+import DescriptionRoundedIcon from '@mui/icons-material/DescriptionRounded';
+import Cookies from "js-cookie"
+import User from "./User";
+
+const CustomDialog = ({ open, handleClose, projectId }) => {
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        handleClose();  // Close the modal if clicking outside of it
+      }
+    }
+
+    // Bind the event listener
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      // Unbind the event listener on cleanup
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [handleClose]);
+
+  useEffect(() => {
+    // Function to handle keydown event
+    const handleEsc = (event) => {
+      if (event.key === "Escape") {
+        handleClose(); // Call the function on pressing Escape
+      }
+    };
+
+    // Add event listener for keydown
+    document.addEventListener("keydown", handleEsc);
+
+    // Cleanup event listener on component unmount
+    return () => {
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [handleClose]);
+
+  if (!open) return null;
+
+  return (
+    <Box ref={modalRef}>
+      <Contributor
+        projectId={projectId}
+        handleClose={handleClose}
+      />
+    </Box >
+  );
+};
+
+
 
 // MenuButton component with custom styles
 const MenuButton = styled(Button)({
@@ -41,200 +96,168 @@ const MenuButton = styled(Button)({
 });
 
 const Tools = ({ liveUsers }) => {
-  const [contributor, setContributor] = useState("");
-  const [open, setOpen] = React.useState(false);
-
-  const handleClickOpen = () => {
-    setOpen(true);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-  };
-
   const navigate = useNavigate();
   const [projectName, setProjectName] = useState("");
   const { projectId } = useParams();
+  const { GET } = useAPI();
 
-  const getProjectName = async () => {
-    const headers = {
-      "Content-Type": "application/json",
-      authorization: `Bearer ${window.localStorage.getItem("token")}`,
-    };
-    try {
-      const results = await axios.get(
-        (config.BACKEND_API || "http://localhost:8000") +
-          `/project/get-project-name?username=${window.localStorage.getItem(
-            "username"
-          )}&projectId=${projectId}`,
-        { headers }
-      );
-      console.log(results.data.project_name);
-      setProjectName((prev) => results.data.project_name);
-    } catch (err) {
-      console.log("err ->", err);
-    }
-  };
+  const [openDialog, setOpenDialog] = useState(false);
+  const handleClickOpenDialog = () => setOpenDialog(true);
+  const handleCloseDialog = () => setOpenDialog(false);
 
-  const addContributor = async (contributors) => {
-    const headers = {
-      "Content-Type": "application/json",
-      authorization: `Bearer ${window.localStorage.getItem("token")}`,
-    };
-    try {
-      const results = await axios.post(
-        (config.BACKEND_API || "http://localhost:8000") +
-          `/project/add-contributor?username=${window.localStorage.getItem(
-            "username"
-          )}`,
-        { projectId, contributors },
-        { headers }
-      );
-      console.log(results);
-      toast.success(`Added, "${contributor}"`);
-    } catch (err) {
-      console.log("err ->", err);
-      toast.success(`NOT Added, "${contributor}"`);
-    }
-  };
-
-  const handleContributor = (contributors) => {
-    handleClose();
-    addContributor(contributors);
-  };
 
   useEffect(() => {
+    const getProjectName = async () => {
+      try {
+        const results = await GET("/project/get-project-name", { projectId });
+        console.log(results.data.project_name);
+        setProjectName((prev) => results.data.project_name);
+      } catch (err) {
+        console.log("err ->", err);
+      }
+    };
+
     getProjectName();
   }, []);
+
+  const [isProfileVisible, setIsProfileVisible] = useState(false);
+
+  const toggleProfile = (e) => {
+    e.stopPropagation();
+    setIsProfileVisible((prev) => !prev);
+  }
+  const handleCloseProfile = () => setIsProfileVisible(false);
+
+  const profileRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        handleCloseProfile();  // Close the modal if clicking outside of it
+      }
+    }
+
+    // Bind the event listener
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      // Unbind the event listener on cleanup
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [handleCloseProfile]);
+
+  useEffect(() => {
+    // Function to handle keydown event
+    const handleEsc = (event) => {
+      if (event.key === "Escape") {
+        handleCloseProfile(); // Call the function on pressing Escape
+      }
+    };
+
+    // Add event listener for keydown
+    document.addEventListener("keydown", handleEsc);
+
+    // Cleanup event listener on component unmount
+    return () => {
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [handleCloseProfile]);
+
   return (
     <>
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-        PaperProps={{
-          sx: {
-            border: "none",
-            borderRadius: 3, // Optional: Set border-radius
-            boxShadow: "0px 4px 20px rgba(0, 0, 0, 0.2)", // Custom box shadow
-          },
-        }}
-      >
-        <DialogTitle id="alert-dialog-title">Add Contributor</DialogTitle>
-        <DialogContent>
-          <DialogContentText
-            id="alert-dialog-description"
-            sx={{ display: "flex", alignItems: "center" }}
-          >
-            <Contributor
-              projectId={projectId}
-              handleContributor={handleContributor}
-            />
-          </DialogContentText>
-        </DialogContent>
-      </Dialog>
-      <Box sx={{ flexGrow: 1 }}>
-        <AppBar position="static" color="default" elevation={1}>
-          <Toolbar>
-            {/* Left Section: Icon and Title */}
-            <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
-              <IconButton
-                onClick={() => {
-                  navigate("/project");
+      <CustomDialog
+        open={openDialog}
+        handleClose={handleCloseDialog}
+        projectId={projectId}
+      />
+      <Box sx={{ display: "flex", p: 0, m: 0, borderBottom: "1px solid black" }}>
+        {/* Left Section: Icon and Title */}
+        <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
+          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+            <IconButton onClick={() => navigate("/project")}>
+              <DescriptionRoundedIcon fontSize="large" sx={{ color: "black" }} />
+            </IconButton>
+            <Typography fontWeight="bold" fontSize="x-large">
+              {projectName}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Right Section: Icons and Avatar */}
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          {liveUsers && liveUsers?.length > 0 &&
+            liveUsers.map((liveUser, index) => (
+              <Tooltip
+                key={index}
+                TransitionComponent={Zoom}
+                title={
+                  Cookies.get("username") === liveUser.username
+                    ? "You"
+                    : liveUser.username
+                }
+                placement="bottom"
+                arrow
+                componentsProps={{
+                  tooltip: {
+                    sx: {
+                      bgcolor: "common.black",
+                      "& .MuiTooltip-arrow": {
+                        color: "common.black",
+                      },
+                    },
+                  },
                 }}
               >
-                <DescriptionIcon color="primary" fontSize="large" />
-              </IconButton>
-              <Box>
-                <MenuButton>
-                  <Typography variant="h6">{projectName}</Typography>
-                </MenuButton>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    flexGrow: 1,
-                  }}
+                <Avatar
+                  key={index}
+                  sx={{ bgcolor: "#333333" }}
+                  alt={liveUser.username}
+                  src="/broken-image.jpg"
                 >
-                  {[
-                    "File",
-                    "Edit",
-                    "View",
-                    "Insert",
-                    "Format",
-                    "Tools",
-                    "Extensions",
-                    "Help",
-                  ].map((item) => (
-                    <MenuButton key={item} color="inherit">
-                      {item}
-                    </MenuButton>
-                  ))}
-                </Box>
-              </Box>
-            </Box>
+                  {liveUser.username[0].toUpperCase()}
+                </Avatar>
+              </Tooltip>
+            ))}
 
-            {/* Right Section: Icons and Avatar */}
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              {liveUsers &&
-                liveUsers?.length > 0 &&
-                liveUsers.map((liveUser, index) => (
-                  <Tooltip
-                    key={index}
-                    TransitionComponent={Zoom}
-                    title={
-                      window.localStorage.getItem("username") ===
-                      liveUser.username
-                        ? "You"
-                        : liveUser.username
-                    }
-                    placement="bottom"
-                    arrow
-                    componentsProps={{
-                      tooltip: {
-                        sx: {
-                          bgcolor: "common.black",
-                          "& .MuiTooltip-arrow": {
-                            color: "common.black",
-                          },
-                        },
-                      },
-                    }}
-                  >
-                    <Avatar
-                      key={index}
-                      sx={{ bgcolor: "green" }}
-                      alt={liveUser.username}
-                      src="/broken-image.jpg"
-                    >
-                      {liveUser.username[0].toUpperCase()}
-                    </Avatar>
-                  </Tooltip>
-                ))}
-              <Button
-                onClick={handleClickOpen}
-                variant="outlined"
-                startIcon={<GroupAddRoundedIcon />}
-              >
-                Add contributors
-              </Button>
-              <IconButton color="inherit">
-                <HistoryIcon />
-              </IconButton>
-              <IconButton color="inherit">
-                <CommentIcon />
-              </IconButton>
-              <IconButton color="inherit">
-                <VideoCallIcon />
-              </IconButton>
-              <IconButton color="inherit">
-                <ShareIcon />
-              </IconButton>
-              <Avatar sx={{ marginLeft: 2 }} />
-            </Box>
-          </Toolbar>
-        </AppBar>
+          <Tooltip
+            title="Add Contributors"
+            leaveDelay={0}
+            componentsProps={{
+              tooltip: {
+                sx: {
+                  bgcolor: "common.black",
+                  color: "white",
+                  transition: "none",
+                },
+              },
+            }}
+          >
+            <button onClick={handleClickOpenDialog}>
+              <GroupAddRoundedIcon />
+            </button>
+          </Tooltip>
+          <Box>
+            <Tooltip title="profile"
+              enterDelay={200}
+              leaveDelay={0}
+              componentsProps={{
+                tooltip: {
+                  sx: {
+                    bgcolor: "common.black",
+                    "& .MuiTooltip-arrow": {
+                      color: "common.black",
+                    },
+                  },
+                },
+              }}>
+              <button style={{ border: "none" }} onClick={toggleProfile}>
+                <AccountBoxRoundedIcon sx={{ color: "black" }} fontSize="large" />
+              </button>
+            </Tooltip>
+            {isProfileVisible ? <Box ref={profileRef} sx={{ zIndex: 9999999, position: "absolute", right: 10, top: 54, bgcolor: "#FAFAFA", border: "1px solid black", borderRadius: "10px" }}>
+              <User handleClose={handleCloseProfile} />
+            </Box> : null}
+          </Box>
+        </Box>
       </Box>
     </>
   );

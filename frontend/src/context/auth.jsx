@@ -1,46 +1,33 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-hot-toast";
+import Cookies from "js-cookie";
 
 const authContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
+  
+  const clearAllCookies = () => {
+    const allCookies = Cookies.get();
+    Object.keys(allCookies).forEach((cookie) => {
+      Cookies.remove(cookie);
+    });
+  };
 
   const LogOut = () => {
-    window.localStorage.removeItem("token");
-    window.localStorage.removeItem("username");
-    toast.success("Logout successful!");
-    setIsLoggedIn((prev) => false);
-    navigate("/");
+    clearAllCookies();
+    navigate("/auth");
   };
 
-  const validateUser = () => {
-    if (
-      isLoggedIn &&
-      !(
-        window.localStorage.getItem("token") !== null &&
-        window.localStorage.getItem("username") !== null
-      )
-    ) {
-      LogOut();
-    }
-  };
+  const authenticate = () => {
+    const authToken = Cookies.get("authToken");
+    const username = Cookies.get("username");
 
-  useEffect(() => {
-    setIsLoggedIn((prev) => window.localStorage.getItem("token") !== null);
-  }, []);
+    if (!(authToken && username)) LogOut();
+  };
 
   return (
-    <authContext.Provider
-      value={{
-        isLoggedIn,
-        setIsLoggedIn,
-        LogOut,
-        validateUser,
-      }}
-    >
+    <authContext.Provider value={{ authenticate, LogOut }}>
       {children}
     </authContext.Provider>
   );
@@ -49,7 +36,7 @@ export const AuthProvider = ({ children }) => {
 export const useAuth = () => {
   const context = useContext(authContext);
   if (!context) {
-    throw new Error("useTheme must be used within a ThemeProvider");
+    throw new Error("useAuth must be used within a AuthProvider");
   }
   return context;
 };

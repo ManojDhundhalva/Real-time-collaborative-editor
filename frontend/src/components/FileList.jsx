@@ -23,9 +23,8 @@ import TextFieldsRoundedIcon from "@mui/icons-material/TextFieldsRounded";
 import DescriptionRoundedIcon from "@mui/icons-material/DescriptionRounded";
 import AssignmentRoundedIcon from "@mui/icons-material/AssignmentRounded";
 import { useParams } from "react-router-dom";
-import axios from "axios";
-import config from "../config";
 import { toast } from "react-hot-toast";
+import useAPI from "../hooks/api";
 
 const getExtension = (type) => {
   if (type === "docs") return ".doc";
@@ -37,6 +36,7 @@ const FileList = ({ allFiles, onFileClick, selectedFileId, getAllFiles }) => {
   const [newFile, setNewFile] = useState("");
   const [fileType, setFileType] = useState("text");
   const { projectId } = useParams();
+  const { POST } = useAPI();
 
   const [open, setOpen] = React.useState(false);
 
@@ -53,19 +53,13 @@ const FileList = ({ allFiles, onFileClick, selectedFileId, getAllFiles }) => {
   };
 
   const createNewFile = async () => {
-    const headers = {
-      "Content-Type": "application/json",
-      authorization: `Bearer ${window.localStorage.getItem("token")}`,
+    const newFileData = {
+      newFile,
+      projectId,
+      extension: getExtension(fileType),
     };
     try {
-      const results = await axios.post(
-        (config.BACKEND_API || "http://localhost:8000") +
-          `/project/create-a-new-file?username=${window.localStorage.getItem(
-            "username"
-          )}`,
-        { newFile, projectId, extension: getExtension(fileType) },
-        { headers }
-      );
+      await POST("/project/create-a-new-file", newFileData);
       // console.log(results.data);
       getAllFiles();
       toast.success(`File Created`);

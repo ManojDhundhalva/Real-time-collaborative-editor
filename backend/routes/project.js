@@ -4,11 +4,7 @@ const { verifyTokenAndAuthorization } = require("../middlewares/verifyUser");
 
 const router = Router();
 
-router.get(
-  "/get-all-projects",
-  verifyTokenAndAuthorization,
-  controller.getAllProjects
-);
+router.get("/get-all-projects",verifyTokenAndAuthorization,controller.getAllProjects);
 router.post("/add-project", verifyTokenAndAuthorization, controller.addProject);
 router.get("/get-all-files", verifyTokenAndAuthorization, controller.getAllFiles);
 router.post("/create-a-new-file", verifyTokenAndAuthorization, controller.createANewFile);
@@ -20,5 +16,8 @@ router.get("/get-initial-tabs", verifyTokenAndAuthorization, controller.getIniti
 router.get("/get-live-users", verifyTokenAndAuthorization, controller.getLiveUsers);
 router.post("/set-expand-data", verifyTokenAndAuthorization, controller.setExpandData);
 router.get("/users/search", verifyTokenAndAuthorization, controller.userSearch);
+router.get("/code-editor/logs", verifyTokenAndAuthorization, controller.getLogs);
+router.get("/chat/messages", verifyTokenAndAuthorization, controller.getMessages);
+
 
 module.exports = router;
