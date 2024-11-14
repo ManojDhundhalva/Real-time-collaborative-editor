@@ -5,26 +5,28 @@ import API from "../utils/api";
 const useAPI = () => {
     const { LogOut } = useAuth();
 
-    const GET = async (url, params = {}) => {
+    const GET = async (url, params = {}, signal = null) => {
         try {
-            const response = await API.get(url, { params });
+            const response = await API.get(url, { params, signal });
             return response;
         } catch (error) {
             handleError(error);
         }
     };
 
-    const POST = async (url, data = {}, params = {}) => {
+    const POST = async (url, data = {}, params = {}, signal = null) => {
         try {
-            const response = await API.post(url, data, { params });
-            return response.data;
+            const response = await API.post(url, data, { params, signal });
+            return response;
         } catch (error) {
             handleError(error);
         }
     };
 
     const handleError = (error) => {
-        if (error.response) {
+        if (error.code === "ERR_CANCELED") {
+            console.error("[Request aborted] :", error.message);
+        } else if (error.response) {
             // if (error.response.status === 403) LogOut(); //unauthorized
             console.error("[API request error] :", error.response.data?.message);
         } else {

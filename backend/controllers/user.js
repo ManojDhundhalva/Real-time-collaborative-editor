@@ -13,8 +13,8 @@ const getUser = async (req, res) => {
 
 const updateUser = async (req, res) => {
     try {
-        const { firstname, lastname } = req.body;
-        await pool.query(queries.updateUser, [firstname, lastname, req.user.id]);
+        const { name } = req.body;
+        await pool.query(queries.updateUser, [name, req.user.id]);
         res.status(200).json({ message: "User updated successfully" });
     } catch (error) {
         console.error("Error updating user data: ", error);

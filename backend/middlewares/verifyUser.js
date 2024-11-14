@@ -21,11 +21,10 @@ const verifyToken = (req, res, next) => {
 
 const verifyTokenAndAuthorization = (req, res, next) => {
   verifyToken(req, res, () => {
-    const isUserAgentValid = String(req.user.userAgent) === String(req.headers["user-agent"]);
-    const isFingerprintValid = String(req.user.fingerprint) === String(req.headers["x-fingerprint-id"]);
     const isUsernameValid = String(req.user.username) === String(req.cookies.username);
+    const isImageValid = String(req.user.image) === String(req.cookies.image);
 
-    if (isUserAgentValid && isFingerprintValid && isUsernameValid) {
+    if (isUsernameValid && isImageValid) {
       next();
     } else {
       return res.status(403).json({ message: "Access denied. Authorization failed." });

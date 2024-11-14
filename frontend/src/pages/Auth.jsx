@@ -15,10 +15,9 @@ function Auth() {
     const validateUser = () => {
       const authToken = Cookies.get("authToken");
       const username = Cookies.get("username");
+      const image = Cookies.get("image");
 
-      console.log(authToken, username);
-
-      if (authToken && username) navigate("/");
+      if (authToken && username && image) navigate("/");
     };
 
     validateUser();

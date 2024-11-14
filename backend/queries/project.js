@@ -161,12 +161,19 @@ WHERE username = $1 AND project_id = $2;
 `;
 
 const getInitialTabs = `
-SELECT * FROM live_users AS lu JOIN files AS f ON lu.file_id = f.file_id WHERE lu.username = $1 AND lu.project_id = $2;
+SELECT lu.*, f.*, u.profile_image AS image FROM live_users AS lu 
+JOIN users AS u
+ON lu.username = u.username
+JOIN files AS f 
+ON lu.file_id = f.file_id 
+WHERE lu.username = $1 AND lu.project_id = $2;
 `;
 
 const getLiveUsers = `
-SELECT username 
-FROM project_live_users 
+SELECT u.username, u.profile_image AS image
+FROM project_live_users AS plu
+JOIN users AS u
+ON plu.username = u.username
 WHERE project_id = $1;
 `;
 
@@ -182,18 +189,18 @@ const deleteExpandData = `
 
 const userSearch = `
 SELECT * FROM users 
-WHERE (firstname ILIKE $1 OR lastname ILIKE $1 OR username ILIKE $1)
+WHERE (username ILIKE $1)
 AND id NOT IN (
     SELECT user_id FROM project_owners WHERE project_id = $2
 )
 `;
 
 const getLogs = `
-SELECT * FROM logs WHERE file_id = $1;
+SELECT l.*, u.profile_image AS image FROM logs AS l JOIN users AS u ON l.username = u.username WHERE file_id = $1;
 `;
 
 const getMessages = `   
-SELECT * FROM chat WHERE project_id = $1;
+SELECT c.*, u.profile_image AS image FROM chat AS c JOIN users AS u ON c.username = u.username WHERE project_id = $1;
 `;
 
 module.exports = {

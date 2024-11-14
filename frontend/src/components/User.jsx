@@ -1,55 +1,91 @@
+// Desc: User component to display user profile and update user profile
 import React, { useState } from 'react'
-import { useUser } from '../context/user'
-import { DateFormatter } from "../utils/formatters"
-import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-import { Box, Typography, Avatar } from '@mui/material';
-import { TextField, InputAdornment } from '@mui/material';
-import PersonIcon from '@mui/icons-material/Person';
-import CircularProgress from '@mui/material/CircularProgress';
-import useAPI from '../hooks/api';
 import { toast } from 'react-hot-toast';
-import { isAlphabetic } from '../utils/validation';
+
+// Contexts
+import { useUser } from '../context/user';
+import { useAuth } from '../context/auth';
+
+// Hooks
+import useAPI from '../hooks/api';
+
+// Utils
+import { isValidFullName } from '../utils/validation';
+import { getAvatar } from "../utils/avatar";
+import { DateFormatter } from "../utils/formatters"
+
+// Material-UI Components
+import {
+    Box,
+    Typography,
+    Avatar,
+    TextField,
+    InputAdornment,
+    CircularProgress
+} from '@mui/material';
+
+// Material-UI Icons
+import PersonIcon from '@mui/icons-material/Person';
+import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
+import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import ExitToAppRoundedIcon from '@mui/icons-material/ExitToAppRounded';
 
 function User(props) {
-    const { handleClose } = props;
-    const { POST } = useAPI();
-    const { userName, email, firstName, lastName, userTimestamp, updatedOn, getUser } = useUser();
 
-    const [first, setFirst] = useState(firstName);
-    const [last, setLast] = useState(lastName);
+    const { handleClose } = props;
+
+    const { POST } = useAPI();
+    const { userInfo, getUser } = useUser();
+    const { LogOut } = useAuth();
+
+    const [fullName, setFullName] = useState(userInfo.fullName);
     const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
     const [justVerify, setJustVerify] = useState(false);
+
+    const [isProfileImageUpdate, setIsProfileImageUpdate] = useState(false);
 
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
 
         setJustVerify(true);
 
-        if (first.trim() === "" || last.trim() === "") return;
+        if (fullName.trim() === "") return;
 
         setIsUpdatingProfile(true);
         try {
-            await POST("/user", { firstname: first, lastname: last });
-            toast.success("Profile updated successfully");
+            const results = await POST("/user", { name: fullName });
+            toast(results?.data?.message || "Profile updated successfully",
+                {
+                    icon: <CheckCircleRoundedIcon />,
+                    style: {
+                        borderRadius: '10px',
+                        background: '#333',
+                        color: '#fff',
+                    },
+                }
+            );
             getUser();
         } catch (error) {
             console.error("Error updating user data: ", error);
-            toast.error("Error updating user data");
+            toast(error.response?.data?.message || "Error updating user data",
+                {
+                    icon: <CancelRoundedIcon />,
+                    style: {
+                        borderRadius: '10px',
+                        background: '#333',
+                        color: '#fff',
+                    },
+                }
+            );
         } finally {
             setIsUpdatingProfile(false);
         }
     };
 
-    const handleFirstChange = (e) => {
-
-        if (!isAlphabetic(e.target.value)) return;
-        setFirst(e.target.value); // Update state only if it matches the pattern
-        setJustVerify(true);
-    };
-
-    const handleLastChange = (e) => {
-        if (!isAlphabetic(e.target.value)) return;
-        setLast(e.target.value); // Update state only if it matches the pattern
+    const handleFullNameChange = (e) => {
+        if (!isValidFullName(e.target.value) || e.target.value.length >= 255) return;
+        setFullName(e.target.value); // Update state only if it matches the pattern
         setJustVerify(true);
     }
 
@@ -57,7 +93,7 @@ function User(props) {
         <>
             <Box sx={{ minWidth: "400px", minHeight: "300px", position: "relative", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", width: "100%", height: "100%" }}>
                 <Box sx={{ m: 1 }}>
-                    <Typography fontWeight="bold" sx={{ color: "#666666" }}>{email || "email: N/A"}</Typography>
+                    <Typography fontWeight="bold" sx={{ color: "#666666" }}>{userInfo.email || "email: N/A"}</Typography>
                 </Box>
                 <Box sx={{ position: "absolute", right: 0, top: 0, m: 1 }}>
                     <CloseRoundedIcon
@@ -73,36 +109,33 @@ function User(props) {
                 </Box>
                 <Box sx={{ m: 1 }}>
                     <Avatar
-                        sx={{ bgcolor: "#333333", width: 80, height: 80, fontSize: 40 }}
-                        alt={userName}
-                        src="/broken-image.jpg"
-                    >
-                        {userName[0].toUpperCase()}
-                    </Avatar>
+                        sx={{ bgcolor: "#333333", width: 150, height: 150, fontSize: 75, border: "2px solid black" }}
+                        alt={userInfo.userName}
+                        src={getAvatar(userInfo.profileImage)}
+                    />
                 </Box>
-                <Box sx={{ m: 1 }}  >
-                    <Typography fontWeight="bold" variant='h5' sx={{ color: "#333333" }}>Hii, {userName || "N/A"}!</Typography>
+                <Box sx={{ m: 1, my: 2 }}  >
+                    <Typography fontWeight="bold" variant='h5' sx={{ color: "#333333" }}>Hii, {userInfo.userName || "username: N/A"}!</Typography>
                 </Box>
-                <form onSubmit={handleUpdateProfile} style={{ margin: 1, display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
-                    <Box sx={{ m: 1 }}>
+                <form onSubmit={handleUpdateProfile} style={{ display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
+                    <Box sx={{ m: 1, my: 2 }}>
                         <TextField
-                            value={first}
-                            onChange={handleFirstChange}
-                            id="firstname"
-                            label="First Name"
-                            placeholder="John"
+                            value={fullName}
+                            onChange={handleFullNameChange}
+                            id="Name"
+                            label="Name"
+                            placeholder="John Doe"
                             variant="outlined"
                             fullWidth
-                            required
                             size="small"
                             error={
-                                justVerify && (first === "" || first.length >= 255)
+                                justVerify && (fullName === "")
                             }
                             helperText={
                                 justVerify &&
-                                (first.trim() === ""
+                                (fullName.trim() === ""
                                     ? "This field cannot be empty."
-                                    : first.length >= 255 ? "First Name is too long." : "")
+                                    : "")
                             }
                             InputProps={{
                                 startAdornment: (
@@ -129,52 +162,7 @@ function User(props) {
                             }}
                         />
                     </Box>
-                    <Box sx={{ m: 1 }}>
-                        <TextField
-                            value={last}
-                            onChange={handleLastChange}
-                            id="lastname"
-                            label="Last Name"
-                            placeholder="Doe"
-                            variant="outlined"
-                            fullWidth
-                            required
-                            size="small"
-                            error={
-                                justVerify && (last === "" || last.length >= 255)
-                            }
-                            helperText={
-                                justVerify &&
-                                (last.trim() === ""
-                                    ? "This field cannot be empty."
-                                    : last.length >= 255 ? "Last Name is too long." : "")
-                            }
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <PersonIcon sx={{ color: "black" }} />
-                                    </InputAdornment>
-                                ),
-                            }}
-                            sx={{
-                                color: "black",
-                                "& .MuiOutlinedInput-root": {
-                                    borderRadius: 3,
-                                    fontWeight: "bold",
-                                    "&.Mui-focused fieldset": {
-                                        borderColor: "black", // Keep the border color when focused
-                                    },
-                                },
-                                "& .MuiInputLabel-root": {
-                                    color: "black", // Change the label color
-                                    "&.Mui-focused": {
-                                        color: "black", // Change the label color
-                                    },
-                                },
-                            }}
-                        />
-                    </Box>
-                    <Box sx={{ m: 1 }}>
+                    <Box sx={{ m: 1, my: 2 }}>
                         <button type="submit" style={{ fontWeight: "bold" }}>
                             {isUpdatingProfile ? (
                                 <>
@@ -190,11 +178,17 @@ function User(props) {
                         </button>
                     </Box>
                 </form>
-                <Box sx={{ m: 1, display: "flex", flexDirection: "column" }}>
-                    <Typography fontWeight="bold" variant='caption' sx={{ color: "#666666" }}>Created On: {DateFormatter(userTimestamp) || "N/A"}</Typography>
-                    <Typography fontWeight="bold" variant='caption' sx={{ color: "#666666" }}>Updated On: {DateFormatter(updatedOn) || "N/A"}</Typography>
+                <Box sx={{ display: "flex", flexDirection: "column" }}>
+                    <Typography fontWeight="bold" variant='caption' sx={{ color: "#666666" }}>Created On: {DateFormatter(userInfo.createdAt) || "createdAt: N/A"}</Typography>
+                    <Typography fontWeight="bold" variant='caption' sx={{ color: "#666666" }}>Updated On: {DateFormatter(userInfo.updatedOn) || "updatedOn: N/A"}</Typography>
+                </Box>
+                <Box sx={{ mt: 2, p: 2, borderTop: "1px solid black", display: "flex", justifyContent: "center", alignItems: "center", width: "100%" }}>
+                    <button onClick={() => LogOut()} style={{ fontWeight: "bold" }}>
+                        LogOut <ExitToAppRoundedIcon sx={{ color: "black", ml: 2 }} />
+                    </button>
                 </Box>
             </Box>
+            
         </>
     )
 }

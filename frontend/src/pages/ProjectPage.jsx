@@ -1,9 +1,22 @@
+// Desc: This file contains the ProjectPage component which is the main page of the application where the user can see all the projects they have created and can create new projects as well.
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
+
+// Hooks
 import useAPI from "../hooks/api";
+
+// Contexts
+import { useUser } from "../context/user";
+
+// Utils
+import { getAvatar } from "../utils/avatar";
 import { formatTimestamp } from "../utils/formatters";
 
+// Components
+import User from "../components/User";
+
+// Material-UI Components
 import {
   IconButton,
   InputBase,
@@ -15,20 +28,21 @@ import {
   InputAdornment,
   CircularProgress,
   Skeleton,
+  Avatar,
 } from "@mui/material";
 
+// Material-UI Icons
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import GridOnRoundedIcon from "@mui/icons-material/GridOnRounded";
 import SortByAlphaRoundedIcon from "@mui/icons-material/SortByAlphaRounded";
 import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import DescriptionRoundedIcon from '@mui/icons-material/DescriptionRounded';
-import AccountBoxRoundedIcon from '@mui/icons-material/AccountBoxRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import TextFieldsRoundedIcon from '@mui/icons-material/TextFieldsRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-import User from "../components/User";
+
 
 const CustomDialog = ({ open, handleClose }) => {
 
@@ -198,6 +212,7 @@ const CustomDialog = ({ open, handleClose }) => {
 function ProjectPage() {
   const { GET } = useAPI();
   const navigate = useNavigate();
+  const { userInfo } = useUser();
 
   const [allProjects, setAllProjects] = useState([]);
   const [searchValue, setSearchValue] = useState("");
@@ -383,9 +398,12 @@ function ProjectPage() {
                 },
               },
             }}>
-            <button style={{ border: "none" }} onClick={toggleProfile}>
-              <AccountBoxRoundedIcon sx={{ color: "black" }} fontSize="large" />
-            </button>
+            <Avatar
+              onClick={toggleProfile}
+              sx={{ cursor: "pointer", width: 46, height: 46, border: "1px solid black", }}
+              alt={userInfo.userName}
+              src={getAvatar(userInfo.profileImage)}
+            />
           </Tooltip>
         </Box>
       </Box>

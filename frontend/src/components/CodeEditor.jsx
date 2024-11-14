@@ -91,6 +91,7 @@ import OpenInFullRoundedIcon from '@mui/icons-material/OpenInFullRounded';
 /*
     logs: [
       {
+        image,
         username: "user1",  
         change: "string",
         from_line: 1,
@@ -102,10 +103,11 @@ import OpenInFullRoundedIcon from '@mui/icons-material/OpenInFullRounded';
     ]
 */
 
+import { getAvatar } from "../utils/avatar";
 import { themes } from "../utils/code-editor-themes";
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 
-const CodeEditor = ({ fileName, socket, fileId, username, setTabs }) => {
+const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage }) => {
   const { GET } = useAPI();
   const editorRef = useRef(null);
   const editorInstance = useRef(null);
@@ -177,6 +179,7 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs }) => {
       if (isRemoteChange.current || !change.origin) return;
 
       const newLog = {
+        image: localImage,
         username,
         origin: change.origin,
         removed: change.removed.join(""),
@@ -285,7 +288,7 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs }) => {
   useEffect(() => {
     const userJoined = (data) => {
       if (!data && !data?.aUser) return;
-      const { aUser } = data;
+      const { aUser, image: UserImage } = data;
       console.log("userJoined", aUser);
 
       const {
@@ -336,6 +339,7 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs }) => {
                 users: [
                   ...tab.users,
                   {
+                    image: UserImage,
                     username,
                     is_active_in_tab,
                     is_live,
@@ -382,6 +386,7 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs }) => {
 
         allUsers.forEach((aUser) => {
           const {
+            image: UserImage,
             file_id,
             username,
             is_active_in_tab,
@@ -409,6 +414,7 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs }) => {
               } else {
                 // Add new user
                 tab.users.push({
+                  image: UserImage,
                   username,
                   is_active_in_tab,
                   is_live,
@@ -730,12 +736,10 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs }) => {
                     }}
                   >
                     <Avatar
-                      sx={{ bgcolor: "#333333", width: 28, height: 28, fontSize: 14 }}
+                      sx={{ width: 42, height: 42, border: "1px solid black", }}
                       alt={log.username}
-                      src="/broken-image.jpg"
-                    >
-                      {log.username[0].toUpperCase()}
-                    </Avatar>
+                      src={getAvatar(log.image)}
+                    />
                   </Tooltip>
                 </Box>
                 <Box sx={{ px: 1, width: "100%" }}>

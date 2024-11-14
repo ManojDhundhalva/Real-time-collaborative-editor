@@ -6,7 +6,7 @@ const authContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
-  
+
   const clearAllCookies = () => {
     const allCookies = Cookies.get();
     Object.keys(allCookies).forEach((cookie) => {
@@ -26,8 +26,15 @@ export const AuthProvider = ({ children }) => {
     if (!(authToken && username)) LogOut();
   };
 
+  const isAuthenticated = () => {
+    const authToken = Cookies.get("authToken");
+    const username = Cookies.get("username");
+
+    return (authToken && username);
+  };
+
   return (
-    <authContext.Provider value={{ authenticate, LogOut }}>
+    <authContext.Provider value={{ isAuthenticated, authenticate, LogOut }}>
       {children}
     </authContext.Provider>
   );

@@ -44,3 +44,10 @@ export const DateFormatter = (dateString) => {
     const formattedDate = moment(dateString).format("MMMM D, YYYY, h:mm A");
     return formattedDate;
 };
+
+// Convert time to minutes and seconds format
+export const formatTimeMinutes = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };

@@ -37,6 +37,9 @@ import AccountBoxRoundedIcon from "@mui/icons-material/AccountBoxRounded"
 import DescriptionRoundedIcon from '@mui/icons-material/DescriptionRounded';
 import Cookies from "js-cookie"
 import User from "./User";
+import { useUser } from "../context/user";
+import { getAvatar } from "../utils/avatar";
+
 
 const CustomDialog = ({ open, handleClose, projectId }) => {
   const modalRef = useRef(null);
@@ -86,20 +89,12 @@ const CustomDialog = ({ open, handleClose, projectId }) => {
 };
 
 
-
-// MenuButton component with custom styles
-const MenuButton = styled(Button)({
-  textTransform: "none",
-  minWidth: "50px",
-  fontSize: "0.9rem",
-  padding: "0 10px",
-});
-
 const Tools = ({ liveUsers }) => {
   const navigate = useNavigate();
   const [projectName, setProjectName] = useState("");
   const { projectId } = useParams();
   const { GET } = useAPI();
+  const { userInfo } = useUser();
 
   const [openDialog, setOpenDialog] = useState(false);
   const handleClickOpenDialog = () => setOpenDialog(true);
@@ -208,34 +203,33 @@ const Tools = ({ liveUsers }) => {
                 }}
               >
                 <Avatar
-                  key={index}
-                  sx={{ bgcolor: "#333333" }}
+                  onClick={toggleProfile}
+                  sx={{ width: 42, height: 42, border: "1px solid black", }}
                   alt={liveUser.username}
-                  src="/broken-image.jpg"
-                >
-                  {liveUser.username[0].toUpperCase()}
-                </Avatar>
+                  src={getAvatar(liveUser.image)}
+                />
               </Tooltip>
             ))}
-
-          <Tooltip
-            title="Add Contributors"
-            leaveDelay={0}
-            componentsProps={{
-              tooltip: {
-                sx: {
-                  bgcolor: "common.black",
-                  color: "white",
-                  transition: "none",
+          <Box sx={{ ml: 1 }}>
+            <Tooltip
+              title="Add Contributors"
+              leaveDelay={0}
+              componentsProps={{
+                tooltip: {
+                  sx: {
+                    bgcolor: "common.black",
+                    color: "white",
+                    transition: "none",
+                  },
                 },
-              },
-            }}
-          >
-            <button onClick={handleClickOpenDialog}>
-              <GroupAddRoundedIcon />
-            </button>
-          </Tooltip>
-          <Box>
+              }}
+            >
+              <button onClick={handleClickOpenDialog}>
+                <GroupAddRoundedIcon />
+              </button>
+            </Tooltip>
+          </Box>
+          <Box sx={{ mx: 1 }}>
             <Tooltip title="profile"
               enterDelay={200}
               leaveDelay={0}
@@ -249,9 +243,12 @@ const Tools = ({ liveUsers }) => {
                   },
                 },
               }}>
-              <button style={{ border: "none" }} onClick={toggleProfile}>
-                <AccountBoxRoundedIcon sx={{ color: "black" }} fontSize="large" />
-              </button>
+              <Avatar
+                onClick={toggleProfile}
+                sx={{ cursor: "pointer", width: 42, height: 42, border: "1px solid black", }}
+                alt={userInfo.userName}
+                src={getAvatar(userInfo.profileImage)}
+              />
             </Tooltip>
             {isProfileVisible ? <Box ref={profileRef} sx={{ zIndex: 9999999, position: "absolute", right: 10, top: 54, bgcolor: "#FAFAFA", border: "1px solid black", borderRadius: "10px" }}>
               <User handleClose={handleCloseProfile} />

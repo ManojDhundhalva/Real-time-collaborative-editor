@@ -1,7 +1,6 @@
 import React from "react";
 import home from "../images/home.png";
 import { Box } from "@mui/material";
-import User from "../components/User";
 
 function HomePage() {
   return (
@@ -11,7 +10,6 @@ function HomePage() {
           style={{ width: 1000, objectFit: "contain" }}
         />
       </Box>
-      <User />
     </>
   );
 }

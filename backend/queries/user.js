@@ -1,13 +1,13 @@
 const getUser = `
-SELECT username, emailid, firstname, lastname, user_timestamp
+SELECT *
 FROM users
 WHERE id = $1;
 `;
 
 const updateUser = `
 UPDATE users
-SET firstname = $1, lastname = $2, updated_on = CURRENT_TIMESTAMP
-WHERE id = $3;
+SET name = $1, updated_on = CURRENT_TIMESTAMP
+WHERE id = $2;
 `;
 
 module.exports = {

@@ -75,7 +75,7 @@ function Editor() {
   useEffect(() => {
     if (!socket) return;
 
-    const liveUserJoined = ({ username }) => {
+    const liveUserJoined = ({ username, image }) => {
       setLiveUsers((prev) => {
         // Check if the username already exists
         const usernameExists = prev.some((user) => user.username === username);
@@ -84,7 +84,7 @@ function Editor() {
         if (usernameExists) return prev;
 
         // Return a new array with the new user added
-        return [...prev, { username }];
+        return [...prev, { username, image }];
       });
     };
 
@@ -109,6 +109,7 @@ function Editor() {
     socket.emit("editor:join-project", {
       project_id: projectId,
       username: Cookies.get("username"),
+      image: Cookies.get("image"),
     });
   }, [socket]);
 
@@ -166,6 +167,7 @@ function Editor() {
             live_users_timestamp: file.live_users_timestamp,
             project_id: file.project_id,
             username: file.username,
+            image: file.image,
           },
         ],
       }));
@@ -416,6 +418,7 @@ function Editor() {
                             socket={socket}
                             fileId={tab.id}
                             username={Cookies.get("username")}
+                            localImage={Cookies.get("image")}
                             setTabs={setTabs}
                           />
                         </Box>
@@ -428,86 +431,6 @@ function Editor() {
         </div>
       </div>
     </div >
-    // <Grid
-    //   container
-    //   direction="column"
-    //   sx={{ height: "100", overflow: "hidden" }}
-    // >
-    //   <Tools liveUsers={liveUsers} />
-    //   <Grid container item sx={{ flexGrow: 1, overflow: "hidden" }}>
-    //     <Grid
-    //       item
-    //       xs={3}
-    //       sx={{
-    //         height: "100%",
-    //         backgroundColor: "lavender",
-    //         overflowY: "auto",
-    //       }}
-    //     >
-    //       <Typography variant="h6" sx={{ paddingBottom: 1 }}>
-    //         Explorer
-    //       </Typography>
-    //       <FileExplorer
-    //         tabs={tabs}
-    //         setTabs={setTabs}
-    //         socket={socket}
-    //         projectId={projectId}
-    //         handleFileClick={handleFileClick}
-    //         selectedFileId={selectedFileId}
-    //         explorerData={explorerData}
-    //         setExplorerData={setExplorerData}
-    //       />
-    //     </Grid>
-    //     <Grid
-    //       item
-    //       xs={9}
-    //       sx={{ height: "100%", padding: 0, width: "100%", overflow: "hidden" }}
-    //     >
-    //       <Grid>
-    //         <Tabs
-    //           tabs={tabs}
-    //           setTabs={setTabs}
-    //           selectedFileId={selectedFileId}
-    //           handleFileClick={handleFileClick}
-    //           handleCloseTab={handleCloseTab}
-    //         />
-    //       </Grid>
-
-    //       <Grid sx={{ overflowY: "auto", width: "100%", height: "100%" }}>
-    //         {tabs.length > 0 &&
-    //           tabs.map(
-    //             (tab) =>
-    //               tab && (
-    //                 <div
-    //                   key={tab.id}
-    //                   style={{
-    //                     position: "relative",
-    //                     width: "100%",
-    //                   }}
-    //                 >
-    //                   <div
-    //                     style={{
-    //                       position: "abosulte",
-    //                       zIndex: tab.id === selectedFileId ? 100 : 0,
-    //                       width: "100%",
-    //                       backgroundColor: "grey",
-    //                     }}
-    //                   >
-    //                     <div>{tab.name}</div>
-    //                     <CodeEditor
-    //                       socket={socket}
-    //                       fileId={tab.id}
-    //                       username={window.localStorage.getItem("username")}
-    //                       setTabs={setTabs}
-    //                     />
-    //                   </div>
-    //                 </div>
-    //               )
-    //           )}
-    //       </Grid>
-    //     </Grid>
-    //   </Grid>
-    // </Grid>
   );
 }
 

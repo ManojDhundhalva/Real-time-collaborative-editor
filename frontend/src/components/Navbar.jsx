@@ -1,25 +1,16 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/auth";
-
-import { Button, MenuItem, Menu, IconButton } from "@mui/material";
-import AccountCircleOutlinedIcon from "@mui/icons-material/AccountCircleOutlined";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Link } from "react-router-dom";
+import { Button, Box, Avatar, Tooltip } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import User from "../components/User";
+import { useUser } from "../context/user";
+import { getAvatar } from "../utils/avatar";
 
 const Navbar = () => {
-  const [anchorEl, setAnchorEl] = useState(null);
+  const { userInfo } = useUser();
+
   const [prevScrollPos, setPrevScrollPos] = useState(window.pageYOffset);
   const [showNavbar, setShowNavbar] = useState(true);
-  const { LogOut } = useAuth();
-  const navigate = useNavigate();
-
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
 
   const handleScroll = useCallback(() => {
     const currentScrollPos = window.pageYOffset;
@@ -33,6 +24,44 @@ const Navbar = () => {
       window.removeEventListener("scroll", handleScroll);
     };
   }, [handleScroll]);
+
+  const profileRef = useRef(null);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const toggleProfile = () => setIsProfileOpen(!isProfileOpen);
+  const handleCloseProfile = () => setIsProfileOpen(false);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        handleCloseProfile();  // Close the modal if clicking outside of it
+      }
+    }
+
+    // Bind the event listener
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      // Unbind the event listener on cleanup
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [handleCloseProfile]);
+
+  useEffect(() => {
+    // Function to handle keydown event
+    const handleEsc = (event) => {
+      if (event.key === "Escape") {
+        handleCloseProfile(); // Call the function on pressing Escape
+      }
+    };
+
+    // Add event listener for keydown
+    document.addEventListener("keydown", handleEsc);
+
+    // Cleanup event listener on component unmount
+    return () => {
+      document.removeEventListener("keydown", handleEsc);
+    };
+  }, [handleCloseProfile]);
 
   const navbarStyle = {
     position: "fixed",
@@ -58,6 +87,7 @@ const Navbar = () => {
     fontFamily: "Quicksand",
     color: "#134611",
   };
+
 
   return (
     <nav className="navbar navbar-expand-lg p-1" style={navbarStyle}>
@@ -102,11 +132,6 @@ const Navbar = () => {
               </Link>
             </Button>
             <Button disableRipple variant="text" sx={buttonStyles}>
-              <Link className="nav-link active" to="/editor" style={linkStyles}>
-                Editor
-              </Link>
-            </Button>
-            <Button disableRipple variant="text" sx={buttonStyles}>
               <Link
                 className="nav-link active"
                 to="/aboutus"
@@ -115,45 +140,31 @@ const Navbar = () => {
                 About Us
               </Link>
             </Button>
-            <div>
-              <IconButton
-                size="large"
-                aria-label="account of current user"
-                aria-controls="menu-appbar"
-                aria-haspopup="true"
-                onClick={handleMenuOpen}
-                color="inherit"
-              >
-                <AccountCircleOutlinedIcon fontSize="large" sx={linkStyles} />
-              </IconButton>
-              <Menu
-                id="menu-appbar"
-                anchorEl={anchorEl}
-                anchorOrigin={{ vertical: "top", horizontal: "right" }}
-                keepMounted
-                transformOrigin={{ vertical: "top", horizontal: "right" }}
-                open={Boolean(anchorEl)}
-                onClose={handleMenuClose}
-              >
-                <MenuItem
-                  onClick={handleMenuClose}
-                  sx={{ fontWeight: "bold", color: "#134611" }}
-                >
-                  <Link className="nav-link" to="/profile">
-                    Profile
-                  </Link>
-                </MenuItem>
-                <MenuItem
-                  sx={{ fontWeight: "bold", color: "#134611" }}
-                  onClick={() => {
-                    handleMenuClose();
-                    LogOut();
-                  }}
-                >
-                  Logout
-                </MenuItem>
-              </Menu>
-            </div>
+            <Tooltip title="profile"
+              enterDelay={200}
+              leaveDelay={0}
+              componentsProps={{
+                tooltip: {
+                  sx: {
+                    bgcolor: "common.black",
+                    "& .MuiTooltip-arrow": {
+                      color: "common.black",
+                    },
+                  },
+                },
+              }}>
+              <Avatar
+                onClick={toggleProfile}
+                sx={{ cursor: "pointer", width: 46, height: 46, border: "1px solid black", }}
+                alt={userInfo.userName}
+                src={getAvatar(userInfo.profileImage)}
+              />
+            </Tooltip>
+            <Box sx={{ position: "relative" }}>
+              {isProfileOpen ? <Box ref={profileRef} sx={{ zIndex: 9999999, position: "absolute", right: 10, top: -6, bgcolor: "#FAFAFA", border: "1px solid black", borderRadius: "10px" }}>
+                <User handleClose={handleCloseProfile} />
+              </Box> : null}
+            </Box>
           </ul>
         </div>
       </div>

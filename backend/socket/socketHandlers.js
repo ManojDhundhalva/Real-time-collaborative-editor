@@ -73,7 +73,7 @@ const getALiveUserInFile = async (fileId, username) => {
 };
 
 const getAllLiveUserInFile = async (fileId) => {
-    const query = `SELECT * FROM live_users WHERE file_id = $1`;
+    const query = `SELECT lu.*, u.profile_image AS image FROM live_users AS lu JOIN users AS u ON u.username = lu.username WHERE file_id = $1`;
     const res = await pool.query(query, [fileId]);
     return res.rows;
 };
@@ -213,18 +213,18 @@ const socketHandlers = (io) => {
         socket.setMaxListeners(20);
         console.log("Connect-id :", socket.id);
 
-        socket.on("editor:join-project", async ({ project_id, username }) => {
+        socket.on("editor:join-project", async ({ project_id, username, image }) => {
             socket.join(project_id);
             await pool.query(
                 `
-        INSERT INTO project_live_users (project_id, username)
-        VALUES ($1, $2)
-        ON CONFLICT (project_id, username) DO NOTHING;
-        `,
+                INSERT INTO project_live_users (project_id, username)
+                VALUES ($1, $2)
+                ON CONFLICT (project_id, username) DO NOTHING;
+                `,
                 [project_id, username]
             );
 
-            io.to(project_id).emit("editor:live-user-joined", { username });
+            io.to(project_id).emit("editor:live-user-joined", { username, image });
 
             console.log("project_id", project_id);
             socket.on(
@@ -272,7 +272,7 @@ const socketHandlers = (io) => {
 
                 //send to all other users
                 const aUser = await getALiveUserInFile(file_id, username);
-                io.to(project_id).emit("code-editor:user-joined", { aUser });
+                io.to(project_id).emit("code-editor:user-joined", { aUser, image });
 
                 socket.on("code-editor:leave-file", async ({ file_id }) => {
                     await removeLiveUser(file_id, username);
@@ -284,7 +284,7 @@ const socketHandlers = (io) => {
 
             socket.on("chat:send-message", async ({ message, time }) => {
                 await insertChatMessage(project_id, username, message, time);
-                io.to(project_id).emit("chat:receive-message", { message, time, username, socketId: socket.id });
+                io.to(project_id).emit("chat:receive-message", { message, time, image, username, socketId: socket.id });
             });
 
             socket.on("disconnect", async () => {

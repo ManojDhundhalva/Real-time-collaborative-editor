@@ -1,12 +1,16 @@
-CREATE TABLE IF NOT EXISTS users(
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
-    firstname VARCHAR(255) NOT NULL,
-    lastname VARCHAR(255) NOT NULL,
+    name VARCHAR(255), -- optional for user -- fetch from google/custom
+    image TEXT, --fetch from google, one user created cannot be changed/verify email
+    profile_image TEXT,
     username VARCHAR(255) UNIQUE NOT NULL,
-    emailid VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
-    user_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-	updated_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    emailid VARCHAR(255) UNIQUE NOT NULL, -- fetch from google/custom
+    password VARCHAR(255),
+    mode VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Adding CHECK constraint for mode
+    CONSTRAINT mode_check CHECK (mode IN ('manual', 'google'))
 );
 
 CREATE TABLE IF NOT EXISTS projects(

@@ -11,6 +11,8 @@ import Avatar from '@mui/material/Avatar';
 import Typography from '@mui/material/Typography';
 import useAPI from '../hooks/api';
 import { toast } from 'react-hot-toast';
+import { getAvatar } from '../utils/avatar';
+import Cookies from 'js-cookie';
 
 function Chat(props) {
 
@@ -163,12 +165,10 @@ function Chat(props) {
                         <Box key={index} sx={{ display: 'flex', justifyContent: "flex-start", gap: 1, bgcolor: "#E6E6E6", borderRadius: "10px", my: "10px" }}>
                             <Box sx={{ display: "flex", justifyContent: "flex-start", alignItems: "flex-start", mx: 1, my: 2 }}>
                                 <Avatar
-                                    sx={{ bgcolor: "#333333", width: 32, height: 32, fontSize: 16 }}
+                                    sx={{ width: 38, height: 38, fontSize: 16, border: "1px solid black" }}
                                     alt={msg.username}
-                                    src="/broken-image.jpg"
-                                >
-                                    {msg.username[0].toUpperCase()}
-                                </Avatar>
+                                    src={getAvatar(msg.image)}
+                                />
                             </Box>
                             <Box sx={{ py: 1, width: "100%", display: "flex", justifyContent: "flex-start", alignItems: "flex-start", flexDirection: "column" }}>
                                 <Typography variant="caption" fontWeight="bold" sx={{ color: "#404040" }}>{msg.username}</Typography>

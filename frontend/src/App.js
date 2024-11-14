@@ -9,16 +9,21 @@ import Editor from "./pages/Editor";
 import AboutUS from "./pages/AboutUs";
 import HomePage from "./pages/HomePage";
 import ProjectPage from "./pages/ProjectPage";
+import ProfilePage from "./pages/ProfilePage";
+import PageNotFound from "./pages/PageNotFound";
+import ProtectedRoute from "./pages/ProtectedRoute";
 
 //components
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 // import TextEditor from "./components/TextEditor";
-import Cookies from "js-cookie";
-import { useUser } from "./context/user";
 
 //css
 import "./CSS/App.css";
+import config from "./config";
+
+//OAuth
+import { GoogleOAuthProvider } from "@react-oauth/google"
 
 function App() {
   const theme = createTheme({
@@ -27,26 +32,30 @@ function App() {
     },
   });
 
-  const { getUser } = useUser();
   const location = useLocation();
   const paths = ["/"];
   const isPath = paths.includes(location.pathname);
 
-  useEffect(() => {
-    if (!Cookies.get("authToken") || !Cookies.get("username")) return;
-    getUser();
-  }, []);
+  const GoogleAuthWrapper = () => {
+    return (
+      <GoogleOAuthProvider clientId={config.CLIENT_ID}>
+        <Auth />
+      </GoogleOAuthProvider>
+    );
+  }
 
   return (
     <>
       <ThemeProvider theme={theme}>
         {isPath && <Navbar />}
         <Routes>
-          <Route exact path="/" element={<HomePage />} />
-          <Route exact path="/auth" element={<Auth />} />
-          <Route exact path="/aboutus" element={<AboutUS />} />
-          <Route exact path="/project" element={<ProjectPage />} />
-          <Route exact path="/project/:projectId" element={<Editor />} />
+          <Route exact path="/auth" element={<GoogleAuthWrapper />} />
+          <Route exact path="/" element={<ProtectedRoute Component={HomePage} />} />
+          <Route exact path="/aboutus" element={<ProtectedRoute Component={AboutUS} />} />
+          <Route exact path="/project" element={<ProtectedRoute Component={ProjectPage} />} />
+          <Route exact path="/profile" element={<ProtectedRoute Component={ProfilePage} />} />
+          <Route exact path="/project/:projectId" element={<ProtectedRoute Component={Editor} />} />
+          <Route exact path="*" element={<PageNotFound />} />
         </Routes>
         {isPath && <Footer />}
       </ThemeProvider>

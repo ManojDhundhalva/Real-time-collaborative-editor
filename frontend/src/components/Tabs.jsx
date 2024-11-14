@@ -7,6 +7,7 @@ import { styled } from '@mui/material/styles';
 import { Badge, Typography, Box } from '@mui/material';
 import MoreHorizRoundedIcon from '@mui/icons-material/MoreHorizRounded';
 import "../CSS/Tabs.css";
+import { getAvatar } from "../utils/avatar";
 
 const StyledBadge = styled(Badge)(({ theme }) => ({
   '& .MuiBadge-badge': {
@@ -142,15 +143,11 @@ const Tabs = (props) => {
                                             },
                                           }}
                                         >
-
                                           <Avatar
-                                            sx={{ color: "white", bgcolor: "#333333" }}
-                                            key={index}
-                                            alt={tab.name}
-                                            src="/broken-image.jpg"
-                                          >
-                                            {user.username[0].toUpperCase()}
-                                          </Avatar>
+                                            sx={{ width: 42, height: 42, border: "1px solid black", }}
+                                            alt={user.username}
+                                            src={getAvatar(user.image)}
+                                          />
                                         </Tooltip>
                                       </StyledBadge>
                                     ) : (
@@ -176,13 +173,10 @@ const Tabs = (props) => {
                                         }}
                                       >
                                         <Avatar
-                                          key={index}
-                                          sx={{ color: "white", bgcolor: "#333333" }}
-                                          alt={tab.name}
-                                          src="/broken-image.jpg"
-                                        >
-                                          {user.username[0].toUpperCase()}
-                                        </Avatar>
+                                          sx={{ width: 42, height: 42, border: "1px solid black", }}
+                                          alt={user.username}
+                                          src={getAvatar(user.image)}
+                                        />
                                       </Tooltip>)}
                                     <Typography fontWeight="bold" sx={{ px: 1 }}>{user.username}</Typography>
                                   </Box>

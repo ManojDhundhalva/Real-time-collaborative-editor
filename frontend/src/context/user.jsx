@@ -1,45 +1,57 @@
+// Imports
 import React, { createContext, useContext, useState } from "react";
-import useAPI from "../hooks/api";
 import { toast } from "react-hot-toast";
+
+// Hooks
+import useAPI from "../hooks/api";
+
+//Material-UI Icons
+import CancelRoundedIcon from "@mui/icons-material/CancelRounded";
 
 const userContext = createContext();
 
 export const UserProvider = ({ children }) => {
 
-    const { GET, POST } = useAPI();
+    const { GET } = useAPI();
 
-    const [userName, setUserName] = useState("N/A");
-    const [email, setEmail] = useState("N/A");
-    const [firstName, setFirstName] = useState("N/A");
-    const [lastName, setLastName] = useState("N/A");
-    const [userTimestamp, setUserTimestamp] = useState("N/A");
-    const [updatedOn, setUpdatedOn] = useState("N/A");
+    const [userInfo, setUserInfo] = useState({
+        fullName: "",
+        userName: "",
+        email: "",
+        createdAt: "",
+        updatedOn: "",
+        profileImage: "",
+    });
 
     const getUser = async () => {
         try {
             const { data } = await GET("/user");
-            setUserName(data.username);
-            setEmail(data.emailid);
-            setFirstName(data.firstname);
-            setLastName(data.lastname);
-            setUserTimestamp(data.user_timestamp);
-            setUpdatedOn(data.updated_on);
+
+            setUserInfo({
+                fullName: data.name,
+                userName: data.username,
+                email: data.emailid,
+                createdAt: data.created_at,
+                updatedOn: data.updated_on,
+                profileImage: data.profile_image,
+            });
         } catch (error) {
             console.error("Error fetching user data: ", error);
-            toast.error("Error fetching user data");
+            toast(error.response?.data?.message || "Error fetching user data",
+                {
+                    icon: <CancelRoundedIcon />,
+                    style: {
+                        borderRadius: '10px',
+                        background: '#333',
+                        color: '#fff',
+                    },
+                }
+            );
         }
     };
 
     return (
-        <userContext.Provider value={{
-            userName,
-            email,
-            firstName,
-            lastName,
-            updatedOn,
-            userTimestamp,
-            getUser,
-        }}>
+        <userContext.Provider value={{ userInfo, getUser }}>
             {children}
         </userContext.Provider>
     );

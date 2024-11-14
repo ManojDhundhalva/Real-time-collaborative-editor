@@ -14,8 +14,7 @@ const io = initIO(server);
 socketHandlers(io);
 
 // Import Routes
-const loginRoutes = require("./routes/login");
-const registerRoutes = require("./routes/register");
+const authRoutes = require("./routes/auth");
 const projectRoutes = require("./routes/project");
 const userRoutes = require("./routes/user");
 
@@ -27,8 +26,7 @@ app.use(express.json());
 // Routes
 app.get("/", (_, res) => res.send("Hello, World!"));
 
-app.use("/login", loginRoutes);
-app.use("/register", registerRoutes);
+app.use("/auth", authRoutes);
 app.use("/project", projectRoutes);
 app.use("/user", userRoutes);
 

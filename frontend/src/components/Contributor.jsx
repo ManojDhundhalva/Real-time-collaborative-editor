@@ -18,6 +18,7 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
 import CircularProgress from "@mui/material/CircularProgress";
 import { toast } from "react-hot-toast";
+import { getAvatar } from "../utils/avatar";
 
 function Contributor(props) {
   const { projectId, handleClose } = props;
@@ -156,9 +157,9 @@ function Contributor(props) {
       {selectedUsers.length ? selectedUsers.map((user, index) => (
         <Box sx={{ my: "2px", mx: "4px" }} key={index}>
           <Chip
-            label={`${user.firstname} ${user.lastname}`} // Adjusted for firstname and lastname
+            label={`${user.username}`} // Adjusted for firstname and lastname
             onDelete={() => handleRemoveUser(user)}
-            avatar={<Avatar src={user.image || ""} sx={{ color: "#333333" }} />}
+            avatar={<Avatar src={getAvatar(user.profile_image)} alt="profile-image" sx={{ width: 20, height: 20, border: "1px solid black" }} />}
             sx={{
               height: "40px", display: "flex", alignItems: "center",
               "& .MuiChip-deleteIcon": {
@@ -258,11 +259,11 @@ function Contributor(props) {
                   onClick={() => handleSelectUser(user)}
                 >
                   <Box>
-                    <Avatar src={user.image} sx={{ color: "grey" }} />
+                    <Avatar src={getAvatar(user.profile_image)} alt="profile-image" sx={{ border: "1px solid black" }} />
                   </Box>
                   <Box sx={{ mx: 1 }}>
                     <Typography fontWeight="bold">
-                      {user.firstname} {user.lastname}
+                      {user.username}
                     </Typography>
                   </Box>
                 </button>
