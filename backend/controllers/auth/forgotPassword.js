@@ -2,13 +2,13 @@ const pool = require("../../db");
 const queries = require("../../queries/auth/forgotPassword");
 const config = require("../../config");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 const resetPassword = async (req, res) => {
 
     try {
         const { username, password } = req.body;
         const hashedPassword = await bcrypt.hash(password, config.SALT_ROUNDS);
-
 
         const results = await pool.query(queries.resetPassword, [username, hashedPassword]);
 

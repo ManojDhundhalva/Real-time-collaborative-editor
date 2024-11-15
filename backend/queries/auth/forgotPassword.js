@@ -7,7 +7,7 @@ const resetPassword = `
 
 const getUserId = `
 SELECT id, profile_image FROM users 
-WHERE username = $1
+WHERE username = $1;
 `;
 
 module.exports = { resetPassword, getUserId };
