@@ -38,7 +38,7 @@ function App() {
 
   const GoogleAuthWrapper = () => {
     return (
-      <GoogleOAuthProvider clientId={config.CLIENT_ID}>
+      <GoogleOAuthProvider clientId={config.GOOGLE_CLIENT_ID}>
         <Auth />
       </GoogleOAuthProvider>
     );
