@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import CodeMirror from "codemirror";
 import "codemirror/lib/codemirror.css";
 
@@ -79,7 +79,7 @@ import "codemirror/keymap/vim";
 import debounce from "lodash.debounce";
 import useAPI from "../hooks/api";
 import { formatLogTimestamp } from "../utils/formatters";
-import { Avatar, Box, Tooltip, Typography, Zoom } from "@mui/material";
+import { Avatar, Box, selectClasses, Tooltip, Typography, Zoom } from "@mui/material";
 import CircularProgress from "@mui/material/CircularProgress";
 import Cookies from "js-cookie";
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
@@ -88,6 +88,8 @@ import FilterNoneRoundedIcon from '@mui/icons-material/FilterNoneRounded';
 import CheckBoxOutlineBlankRoundedIcon from '@mui/icons-material/CheckBoxOutlineBlankRounded';
 import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
 import OpenInFullRoundedIcon from '@mui/icons-material/OpenInFullRounded';
+import CloudDoneRoundedIcon from '@mui/icons-material/CloudDoneRounded';
+
 /*
     logs: [
       {
@@ -108,7 +110,7 @@ import { themes } from "../utils/code-editor-themes";
 import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 
 const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage }) => {
-  const { GET } = useAPI();
+  const { GET, POST } = useAPI();
   const editorRef = useRef(null);
   const editorInstance = useRef(null);
   const isRemoteChange = useRef(false);
@@ -120,25 +122,51 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
   const [logs, setLogs] = useState([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
 
+  const [isLoadingContent, setIsLoadingContent] = useState(false);
+  const [isLoadingSave, setIsLoadingSave] = useState(false);
+
+  const getFileLogs = async () => {
+    setIsLoadingLogs(true);
+    try {
+      const results = await GET("/project/code-editor/logs", { file_id: fileId });
+      console.log("logs ->", results.data);
+      setLogs(results.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoadingLogs(false);
+    }
+  };
   useEffect(() => {
-
-    const getFileLogs = async () => {
-      setIsLoadingLogs(true);
-      try {
-        const results = await GET("/project/code-editor/logs", { file_id: fileId });
-        console.log("logs ->", results.data);
-        setLogs(results.data);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setIsLoadingLogs(false);
-      }
-    };
-
     getFileLogs();
   }, []);
 
+  // **NEW** State for the initial content
+  // const [initialContent, setInitialContent] = useState("");
+
+  // **Fetch Initial Content from Database**
+
+  const fetchInitialContent = async () => {
+    setIsLoadingContent(true);
+    try {
+      const response = await GET("/project/code-editor/content", { file_id: fileId });
+      console.log("response", response.data.file_data.content);
+      if (response?.data?.file_data?.content) {
+        return (response.data.file_data.content); // Save content to state
+      } else {
+        return "";
+      }
+    } catch (error) {
+      console.error("Error fetching initial content:", error);
+      return "";
+    } finally {
+      setIsLoadingContent(false);
+    }
+  };
+
+
   useEffect(() => {
+    if (!socket) return;
     socket.emit("code-editor:load-live-users", { file_id: fileId });
     return () => {
       socket.emit("code-editor:remove-cursor", { file_id: fileId, username });
@@ -148,7 +176,42 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
 
   useEffect(() => {
     if (!socket) return;
+    const handleSendAllCursors = ({ fileId: NewUserFileId }) => {
+      if (fileId === NewUserFileId) {
+        socket.emit("code-editor:get-all-users-cursors", { users });
+      }
+    }
 
+    socket.on("code-editor:send-all-cursors", handleSendAllCursors)
+
+    return () => {
+      socket.off("code-editor:send-all-cursors", handleSendAllCursors);
+    }
+  }, [users]);
+
+
+  useEffect(() => {
+    if (!socket) return;
+    socket.emit("code-editor:send-all-cursors", { fileId });
+  }, [fileId]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleGetAllCursors = ({ users: cursors }) => {
+      console.log("cursors", cursors);
+      setUsers(cursors);
+    }
+    socket.on("code-editor:get-all-users-cursors", handleGetAllCursors);
+
+    return () => {
+      socket.off("code-editor:get-all-users-cursors", handleGetAllCursors);
+    }
+  }, [socket, users]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    // Initialize CodeMirror instance
     const editor = CodeMirror.fromTextArea(editorRef.current, {
       mode: "javascript",
       theme: selectedTheme,
@@ -161,22 +224,31 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
 
     editorInstance.current = editor;
 
-    const handleInputRead = debounce(function (cm, event) {
-      if (!cm.state.completionActive && event.text[0].match(/\w/)) {
+    const setupEditor = async () => {
+      const initialContent = await fetchInitialContent();
+      editor.setValue(initialContent);
+    };
+    setupEditor();
+
+    const handleInputRead = (cm, event) => {
+      if (!cm.state.completionActive && event.text[0]?.match(/\w/)) {
         cm.showHint({
           hint: CodeMirror.hint.anyword,
           completeSingle: false,
         });
       }
-    }, 300);
+    };
 
     editor.on("inputRead", handleInputRead);
 
+    // Debounced function to save content to the database
+    const debouncedSave = debounce((instance) => {
+      const currentContent = instance.getValue();
+      saveContentToDB(currentContent);
+    }, 1000);
+
     editor.on("change", (instance, change) => {
-
-      console.log(change);
-
-      if (isRemoteChange.current || !change.origin) return;
+      if (isRemoteChange.current || !change.origin || change.origin === "setValue") return;
 
       const newLog = {
         image: localImage,
@@ -188,26 +260,23 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
         from_ch: change.from.ch,
         to_line: change.to.line,
         to_ch: change.to.ch,
-        log_timestamp: formatLogTimestamp(new Date())
-      }
+        log_timestamp: formatLogTimestamp(new Date()),
+      };
 
       setLogs((prevLogs) => [...prevLogs, newLog]);
 
       socket.emit("code-editor:send-change", { file_id: fileId, change, newLog });
+
+      debouncedSave(instance);
     });
 
     const receiveChangeHandler = ({ file_id, change, newLog }) => {
-      if (fileId === file_id) {
+      if (fileId === file_id || change.origin !== "setValue") {
         isRemoteChange.current = true;
 
         setLogs((prevLogs) => [...prevLogs, newLog]);
         editor.operation(() => {
-          editor.replaceRange(
-            change.text,
-            change.from,
-            change.to,
-            change.origin
-          );
+          editor.replaceRange(change.text, change.from, change.to, change.origin);
         });
         isRemoteChange.current = false;
       }
@@ -216,25 +285,26 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
     socket.on("code-editor:receive-change", receiveChangeHandler);
 
     editor.on("cursorActivity", (instance) => {
-      // debounce(() => {
       const cursor = editor.getCursor();
+      setUsers((prevUsers) => ({
+        ...prevUsers,
+        [username]: cursor,
+      }));
       socket.emit("code-editor:send-cursor", {
         file_id: fileId,
         username,
         position: cursor,
       });
-      // }, 100)    
     });
 
-    const receiveCursorHandler = ({ file_id, username, position }) => {
-      if (fileId === file_id) {
+    const receiveCursorHandler = ({ file_id, username: OtherUsername, position }) => {
+      if (fileId === file_id && username !== OtherUsername) {
         setUsers((prevUsers) => ({
           ...prevUsers,
-          [username]: position,
+          [OtherUsername]: position,
         }));
       }
     };
-    socket.on("code-editor:receive-cursor", receiveCursorHandler);
 
     const removeCursorHandler = ({ file_id, username }) => {
       if (fileId === file_id) {
@@ -243,14 +313,12 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
           delete newUsers[username];
           return newUsers;
         });
-        // Remove cursor element for disconnected user
         if (cursorElements.current[username]) {
           cursorElements.current[username].remove();
           delete cursorElements.current[username];
         }
       }
     };
-    socket.on("code-editor:remove-cursor", removeCursorHandler);
 
     const removeUserSpecificCursor = ({ username }) => {
       setUsers((prevUsers) => {
@@ -258,38 +326,38 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
         delete newUsers[username];
         return newUsers;
       });
-      // Remove cursor element for disconnected user
       if (cursorElements.current[username]) {
         cursorElements.current[username].remove();
         delete cursorElements.current[username];
       }
     };
 
-    socket.on(
-      "code-editor:remove-user-specific-cursor",
-      removeUserSpecificCursor
-    );
+    socket.on("code-editor:receive-cursor", receiveCursorHandler);
+    socket.on("code-editor:remove-cursor", removeCursorHandler);
+    socket.on("code-editor:remove-user-specific-cursor", removeUserSpecificCursor);
 
     return () => {
-      editor.toTextArea();
+      if (editor) {
+        editor.toTextArea(); // Clean up CodeMirror instance safely
+      }
       socket.off("code-editor:receive-change", receiveChangeHandler);
       socket.off("code-editor:receive-cursor", receiveCursorHandler);
       socket.off("code-editor:remove-cursor", removeCursorHandler);
-      socket.off(
-        "code-editor:remove-user-specific-cursor",
-        removeUserSpecificCursor
-      );
-      // Clean up all cursor elements
+      socket.off("code-editor:remove-user-specific-cursor", removeUserSpecificCursor);
+
       Object.values(cursorElements.current).forEach((el) => el.remove());
       cursorElements.current = {};
     };
   }, [socket, username]);
+
 
   useEffect(() => {
     const userJoined = (data) => {
       if (!data && !data?.aUser) return;
       const { aUser, image: UserImage } = data;
       console.log("userJoined", aUser);
+
+      if (!aUser.fileId || !aUser.username || !aUser.isActiveInTab || !aUser.isLive || !aUser.liveUsersTimestamp || !aUser.projectId) return;
 
       const {
         file_id,
@@ -471,6 +539,7 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
         labelElement.style.padding = "2px 4px";
         labelElement.style.borderRadius = "3px";
         labelElement.style.fontSize = "12px";
+        labelElement.style.zIndex = 9999999;
 
         cursorElement.appendChild(labelElement);
         editor.getWrapperElement().appendChild(cursorElement);
@@ -543,7 +612,14 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
 
-  const toggleLog = () => setIsLogOpen((prev) => !prev);
+  const toggleLog = () => {
+    if (isLogOpen) {
+      setLogs([]);
+    } else {
+      getFileLogs();
+    }
+    setIsLogOpen((prev) => !prev);
+  };
   const handleCloseLog = () => setIsLogOpen((prev) => false);
 
   // Scroll to the bottom whenever logs change
@@ -572,20 +648,77 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
     };
   }, [handleCloseLog]);
 
+
+  // Function to save content to the database
+  const saveContentToDB = (content) => {
+    console.log("content", content);
+    setIsLoadingSave(true);
+
+    // Make the POST request using .then() and .catch()
+    POST("/project/code-editor/save", { file_id: fileId, content })
+      .then((response) => {
+        console.log("Content saved successfully:", response);
+      })
+      .catch((error) => {
+        console.error("Failed to save content:", error);
+      })
+      .finally(() => {
+        setIsLoadingSave(false);
+      });
+  };
+
+  // Memoized handle function to prevent unnecessary re-renders
+  const handleThemeSelect = useCallback((themeName) => {
+    setSelectedTheme(themeName);
+    handleThemeChange(themeName);
+  }, [handleThemeChange]);
+
+
   return (
     <Box sx={{ position: "absolute", width: "100%", height: "100%" }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", p: "2px" }}>
-        <Box>
+        <Box sx={{ display: "flex" }}>
           <Typography sx={{ color: "white" }}>{fileName}</Typography>
         </Box>
+        {isLoadingContent ? (
+          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+            <Typography sx={{ color: "white" }}>Loading Content of file....</Typography>
+            <CircularProgress
+              size={14}
+              thickness={6}
+              sx={{
+                mx: 1,
+                color: "white",
+                '& circle': { strokeLinecap: 'round' },
+              }}
+            />
+          </Box>
+        ) : null}
         <Box sx={{ position: "relative", display: "flex" }}>
+          {!isLoadingSave ?
+            <Box sx={{ px: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <Typography sx={{ color: "white", mx: 1 }}>Saved</Typography>
+              <CloudDoneRoundedIcon sx={{ color: "white" }} />
+            </Box> :
+            <Box sx={{ px: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
+              <Typography sx={{ color: "white", mx: 1 }}>Saving...</Typography>
+              <CircularProgress
+                size={14}
+                thickness={6}
+                sx={{
+                  color: "white",
+                  '& circle': { strokeLinecap: 'round' },
+                }}
+              />
+            </Box>
+          }
           <Box sx={{ px: 1 }}>
             <HistoryRoundedIcon
               onClick={toggleLog}
               sx={{ p: "1px", cursor: "pointer", color: "white", borderRadius: "4px", "&:hover": { color: "black", bgcolor: "#CCCCCC" } }}
             />
           </Box>
-          <div
+          {/* <div
             onClick={toggleDropdown}
             style={{
               display: "flex",
@@ -602,8 +735,8 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
               <span style={{ color: "grey" }}>Theme: </span>{selectedTheme}
             </Typography>
             <ExpandMoreRoundedIcon sx={{ color: "black" }} />
-          </div>
-          {isOpen && (
+          </div> */}
+          {/* {isOpen && (
             <div
               ref={modalRef}
               id="style-1"
@@ -648,22 +781,26 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
                     padding: "4px",
                   }}
                 >
-                  <div
-                    onMouseEnter={(e) => { e.target.style.backgroundColor = "#4D4D4D"; e.target.style.color = "white"; }}
-                    onMouseLeave={(e) => { e.target.style.backgroundColor = "#fff"; e.target.style.color = "black"; }}
-                    style={{
-                      paddingLeft: "6px",
-                      paddingRight: "6px",
+                  <Box
+                    sx={{
+                      px: "6px",
                       color: "black",
+                      bgcolor: "#fff",
                       cursor: "pointer",
                       borderRadius: "4px",
+                      "&:hover": { bgcolor: "#4D4D4D", color: "white" },
                     }}>
                     {theme.name}
-                  </div>
+                  </Box>
                 </div>
               ))}
             </div>
-          )}
+          )} */}
+          <select id="style-1" value={selectedTheme} onChange={(e) => handleThemeSelect(e.target.value)}>
+            {themes.map((theme, index) => (
+              <option key={index} value={theme.name}>{theme.name}</option>
+            ))}
+          </select>
         </Box>
       </Box>
       <div

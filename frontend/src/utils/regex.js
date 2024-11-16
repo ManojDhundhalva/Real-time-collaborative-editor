@@ -10,6 +10,8 @@ export const usernameRegex = /^[a-zA-Z0-9_]+$/;
 
 export const fullNameRegex = /^[a-zA-Z\s]*$/;
 
+export const projectNameRegex = /^[a-zA-Z0-9\s]*$/;
+
 export const spaceIgnoreRegex = /^[a-zA-Z0-9.+_@-]+$/;
 
 export const phoneRegex = /^[0-9]{10}$/;

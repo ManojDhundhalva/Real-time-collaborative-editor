@@ -22,10 +22,10 @@ CREATE TABLE IF NOT EXISTS projects(
 
 CREATE TABLE IF NOT EXISTS project_owners(
     project_id UUID REFERENCES projects(project_id) ON DELETE CASCADE,
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    username VARCHAR(255) REFERENCES users(username) ON DELETE CASCADE,
     is_admin BOOLEAN DEFAULT FALSE,
     last_opened TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (project_id, user_id)
+    PRIMARY KEY (project_id, username)
 );
 
 CREATE TABLE IF NOT EXISTS files (

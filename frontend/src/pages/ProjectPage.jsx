@@ -22,6 +22,7 @@ import {
   InputBase,
   Typography,
   Box,
+  Zoom,
   Container,
   Tooltip,
   TextField,
@@ -42,17 +43,23 @@ import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import TextFieldsRoundedIcon from '@mui/icons-material/TextFieldsRounded';
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-
-
-const CustomDialog = ({ open, handleClose }) => {
+import { isValidProjectName } from "../utils/validation"
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPencil, faXmark } from '@fortawesome/free-solid-svg-icons';  // Example icon
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
+const CustomDialog = ({ open, handleClose, setAllProjects }) => {
 
   const { POST } = useAPI();
 
   const modalRef = useRef(null);
+  const projectNameControllerRef = useRef(null);
 
   const [isCreatingProject, setIsCreatingProject] = useState(false);
   const [projectName, setProjectName] = useState("");
   const [justVerify, setJustVerify] = useState(false);
+  const [isValidProjectNameLoading, setIsValidProjectNameLoading] = useState(false);
+  const [projectNameError, setProjectNameError] = useState(false);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -96,7 +103,9 @@ const CustomDialog = ({ open, handleClose }) => {
 
     setIsCreatingProject(true);
     try {
-      const results = await POST("/project/add-project", { projectName });
+      const results = await POST("/project/add-project", { projectName: projectName.trim() });
+      setProjectName("");
+      setAllProjects(results.data.projects);
       toast.success(results.data.message);
       handleClose();
     } catch (err) {
@@ -106,9 +115,19 @@ const CustomDialog = ({ open, handleClose }) => {
     }
   };
 
+  const handleChangeProjectName = async (e) => {
+
+    if (!isValidProjectName(e.target.value)) return;
+    if (e.target.value.length >= 255) return;
+
+    setJustVerify((prev) => false);
+    setProjectName(e.target.value)
+
+  }
+
   return (
     <Box ref={modalRef} sx={{
-      minWidth: "300px",
+      minWidth: "360px",
       display: "flex",
       flexDirection: "column",
       justifyContent: "center",
@@ -141,12 +160,12 @@ const CustomDialog = ({ open, handleClose }) => {
       <Box sx={{ m: 3 }}>
         <Typography fontWeight="bold" fontSize="xx-large">Create Project</Typography>
       </Box>
-      <form onSubmit={addProject} style={{ display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
-        <Box sx={{ m: 2 }}>
+      <form onSubmit={addProject} style={{ display: "flex", width: "100%", justifyContent: "center", alignItems: "center", flexDirection: "column" }}>
+        <Box sx={{ m: 2, display: "flex", width: "100%", px: 2 }}>
           <TextField
             autoFocus
             value={projectName}
-            onChange={(e) => setProjectName(e.target.value)}
+            onChange={handleChangeProjectName}
             id="project-name"
             label="Project Name"
             placeholder="Project Name"
@@ -214,6 +233,7 @@ function ProjectPage() {
   const navigate = useNavigate();
   const { userInfo } = useUser();
 
+  const [filteredProjects, setFilteredProjects] = useState([]);
   const [allProjects, setAllProjects] = useState([]);
   const [searchValue, setSearchValue] = useState("");
   const [isFetchingProjectsLoading, setIsFetchingProjectsLoading] = useState(false);
@@ -302,6 +322,7 @@ function ProjectPage() {
 
 
   const [isProfileVisible, setIsProfileVisible] = useState(false);
+  const [isProjectNameEditMode, setIsProjectNameEditMode] = useState(false);
 
   const toggleProfile = (e) => {
     e.stopPropagation();
@@ -343,9 +364,35 @@ function ProjectPage() {
     };
   }, [handleCloseProfile]);
 
+  // Use effect to filter projects based on searchValue
+  useEffect(() => {
+    const filtered = allProjects.filter(project =>
+      project.project_name.toLowerCase().startsWith(searchValue.toLowerCase())
+    );
+    setFilteredProjects(filtered);
+  }, [searchValue, allProjects]); // Depend on searchValue and allProjects
+
+  const editMode = useRef(null);
+  useEffect(() => {
+    // Function to handle clicks outside the component
+    const handleClickOutside = (event) => {
+      if (editMode.current && !editMode.current.contains(event.target)) {
+        setIsProjectNameEditMode(false);  // Set state to true when clicked outside
+      }
+    };
+
+    // Add event listener for clicks on the document
+    document.addEventListener('click', handleClickOutside);
+
+    // Clean up the event listener when the component unmounts
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
   return (
     <>
-      <CustomDialog open={openDialog} handleClose={handleCloseDialog} />
+      <CustomDialog open={openDialog} handleClose={handleCloseDialog} setAllProjects={setAllProjects} />
 
       {/* header */}
       <Box sx={{ borderBottom: "1px solid rgb(100, 100, 100)", display: "flex", justifyContent: "space-between", alignItems: "center", px: 2, py: 1 }}>
@@ -424,11 +471,18 @@ function ProjectPage() {
       </Box>
 
       {/* list-of-projects */}
-      {allProjects.length === 0 ? (
+      {filteredProjects.length === 0 ? (
         <Container maxWidth="lg" sx={{ mb: 10 }}>
           <table style={{ width: "100%", height: "100%" }}>
             <thead>
               <tr>
+                <th>
+                  <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
+                    <Typography fontWeight="bold">
+                      Admin
+                    </Typography>
+                  </Box>
+                </th>
                 <th style={{ width: "40%" }}>
                   <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
                     <Typography fontWeight="bold">
@@ -452,23 +506,6 @@ function ProjectPage() {
                 </th>
                 <th>
                   <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-                    <Tooltip
-                      title="Grid view"
-                      leaveDelay={0}
-                      componentsProps={{
-                        tooltip: {
-                          sx: {
-                            bgcolor: "common.black",
-                            color: "white",
-                            transition: "none",
-                          },
-                        },
-                      }}
-                    >
-                      <IconButton>
-                        <GridOnRoundedIcon sx={{ color: "black" }} />
-                      </IconButton>
-                    </Tooltip>
                     <Tooltip title={isAscending ? "Sort A-Z" : "Sort Z-A"}
                       leaveDelay={0}
                       componentsProps={{
@@ -510,6 +547,13 @@ function ProjectPage() {
           <table style={{ width: "100%", height: "100%" }}>
             <thead>
               <tr>
+                <th>
+                  <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
+                    <Typography fontWeight="bold">
+                      Admin
+                    </Typography>
+                  </Box>
+                </th>
                 <th style={{ width: "40%" }}>
                   <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
                     <Typography fontWeight="bold">
@@ -533,23 +577,6 @@ function ProjectPage() {
                 </th>
                 <th>
                   <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-                    <Tooltip
-                      title="Grid view"
-                      leaveDelay={0}
-                      componentsProps={{
-                        tooltip: {
-                          sx: {
-                            bgcolor: "common.black",
-                            color: "white",
-                            transition: "none",
-                          },
-                        },
-                      }}
-                    >
-                      <IconButton>
-                        <GridOnRoundedIcon sx={{ color: "black" }} />
-                      </IconButton>
-                    </Tooltip>
                     <Tooltip title={isAscending ? "Sort A-Z" : "Sort Z-A"}
                       leaveDelay={0}
                       componentsProps={{
@@ -570,13 +597,69 @@ function ProjectPage() {
               </tr>
             </thead>
             <tbody>
-              {allProjects?.map((project, index) => (
+              {filteredProjects?.map((project, index) => (
                 <tr key={index} onClick={() => { navigate(`/project/${project.project_id}`) }}>
                   <td>
                     <Box sx={{ position: "relative", display: "flex", justifyContent: "flex-start" }}>
-                      <Typography fontWeight="bold">
-                        {project.project_name}
-                      </Typography>
+                      <Tooltip
+                        leaveDelay={0}
+                        TransitionComponent={Zoom}
+                        title={project.project_created_by}
+                        placement="left"
+                        componentsProps={{
+                          tooltip: {
+                            sx: {
+                              bgcolor: "common.black",
+                              color: "white",
+                              transition: "none",
+                            },
+                          },
+                        }}
+                      >
+                        <Avatar
+                          src={getAvatar(project.image)}
+                          sx={{ width: 46, height: 46, border: "1px solid black" }}
+                          alt="admin-image"
+                        />
+                      </Tooltip>
+                    </Box>
+                  </td>
+                  <td>
+                    <Box sx={{ position: "relative", display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
+                      {userInfo.userName === project.project_created_by && isProjectNameEditMode ?
+                        <input
+                          ref={editMode}
+                          type="text"
+                          name="project_name"
+                          value={project.project_name}
+                          style={{
+                            border: '1px solid #ccc',       // Add border color
+                            borderRadius: '4px',             // Smooth border radius
+                            padding: '4px',                  // Add padding for better spacing
+                            fontWeight: 'bold',              // Make text bold
+                          }}
+                          onClick={(e) => e.stopPropagation()} // Prevent click event from propagating
+                          onFocus={(e) => e.stopPropagation()} // Prevent focus event from propagating
+                        />
+                        :
+                        <Typography fontWeight="bold">
+                          {project.project_name}
+                        </Typography>}
+                      {userInfo.userName === project.project_created_by ?
+                        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mx: 1 }}>
+                          {isProjectNameEditMode ?
+                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); setIsProjectNameEditMode(false); }} sx={{ bgcolor: "#F2F2F2", mx: 1 }}>
+                              <CloseRoundedIcon fontSize="small" sx={{ color: "black" }} />
+                            </IconButton> :
+                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); setIsProjectNameEditMode(true); }} sx={{ bgcolor: "#F2F2F2", mx: 1 }}>
+                              <EditRoundedIcon fontSize="small" sx={{ color: "black" }} />
+                            </IconButton>
+                          }
+                          <Typography fontWeight="bold" fontSize="small" sx={{ mx: 1, px: 1, alignContent: "center", border: "1px solid #ff9500", color: "#ff9500", borderRadius: "8px" }}>
+                            YOU
+                          </Typography>
+                        </Box>
+                        : null}
                     </Box>
                   </td>
                   <td>
@@ -595,71 +678,17 @@ function ProjectPage() {
                   </td>
                   <td>
                     <Box sx={{ position: "relative", display: "flex", justifyContent: "flex-end" }}>
-                      <Tooltip
-                        leaveDelay={0}
-                        title={document.getElementById(`menu-items-${index}`)?.style.display === "flex" ? "" : "More"}
-                        componentsProps={{
-                          tooltip: {
-                            sx: {
-                              bgcolor: "common.black",
-                              color: "white",
-                              transition: "none",
-                            },
-                          },
-                        }}
-                      >
-                        <IconButton onClick={(e) => { handleMenuToggle(e, index) }}>
-                          <MoreVertIcon sx={{ color: "black" }} />
-                        </IconButton>
-                      </Tooltip>
-                      <Box
-                        className="menu-items"
-                        id={`menu-items-${index}`}
-                        sx={{
-                          display: "none",
-                          position: "absolute",
-                          top: "100%",
-                          left: "100%",
-                          bgcolor: "white",
-                          border: "1px solid #ddd",
-                          boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.15)",
-                          borderRadius: "4px",
-                          zIndex: 1,
-                          transform: "translate(-50%, 0)",
-                        }}
-                      >
-                        <Box
-                          onClick={() => console.log("Rename clicked")}
-                          sx={{
-                            p: 1,
-                            display: "flex",
-                            cursor: "pointer",
-                            "&:hover": { bgcolor: "#f5f5f5" },
-                          }}
-                        >
-                          <TextFieldsRoundedIcon />
-                          <Typography sx={{ px: 1 }}>Rename</Typography>
-                        </Box>
-                        <Box
-                          onClick={() => console.log("Delete clicked")}
-                          sx={{
-                            p: 1,
-                            display: "flex",
-                            cursor: "pointer",
-                            "&:hover": { bgcolor: "#f5f5f5" },
-                          }}
-                        >
-                          <DeleteRoundedIcon />
-                          <Typography sx={{ px: 1 }}>Delete</Typography>
-                        </Box>
-                      </Box>
+                      <IconButton aria-label="delete" onClick={(e) => e.stopPropagation()}>
+                        <DeleteOutlineRoundedIcon sx={{ color: "#333333" }} />
+                      </IconButton>
                     </Box>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </Container>)}
+        </Container >)
+      }
     </>
   );
 }

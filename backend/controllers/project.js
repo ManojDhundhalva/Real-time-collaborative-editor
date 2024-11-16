@@ -8,7 +8,7 @@ const getAllProjects = async (req, resp) => {
       return resp.status(401).json({ message: "Unauthorized access" });
     }
 
-    const results = await pool.query(queries.getAllProjects, [req.user.id]);
+    const results = await pool.query(queries.getAllProjects, [req.user.username]);
 
     return resp.status(200).json(results.rows);
   } catch (error) {
@@ -35,7 +35,7 @@ const addProject = async (req, resp) => {
     ]);
 
     // Associate the project with the owner
-    await pool.query(queries.addProjectOwners, [projectId, req.user.id]);
+    await pool.query(queries.addProjectOwners, [projectId, req.user.username, true]);
 
     // Create the initial file tree structure for the project
     const fileTreeId = uuidv4();
@@ -47,9 +47,11 @@ const addProject = async (req, resp) => {
       true, // Indicates that this is a directory (root)
     ]);
 
+    const { rows } = await pool.query(queries.getAllProjects, [req.user.username]);
+
     return resp
       .status(201)
-      .json({ project_id: projectId, message: "Project added successfully." });
+      .json({ project_id: projectId, message: "Project added successfully.", projects: rows });
   } catch (error) {
     console.error("Error adding project:", error);
     return resp.status(500).json({ message: "Internal Server Error." });
@@ -103,9 +105,10 @@ const getProjectName = async (req, resp) => {
   try {
     const results = await pool.query(queries.getProjectName, [
       req.query.projectId,
+      req.user.username,
     ]);
 
-    resp.status(200).json({ project_name: results.rows[0].project_name });
+    resp.status(200).json(results.rows[0]);
   } catch (err) {
     console.error("Error ->", err);
     resp.status(500).json({ message: "Internal Server Error" });
@@ -116,7 +119,7 @@ const addContributor = async (req, resp) => {
   const { projectId, contributors } = req.body;
   try {
     for (const contributor of contributors) {
-      await pool.query(queries.addContributor, [projectId, contributor.id]);
+      await pool.query(queries.addContributor, [projectId, contributor.username]);
     }
 
     resp.status(200).json({ message: "Added contributors" });
@@ -244,6 +247,29 @@ const getMessages = async (req, res) => {
   }
 };
 
+const saveFile = async (req, res) => {
+  const { file_id, content } = req.body;
+  const jsonContent = JSON.stringify({ content });
+  try {
+    await pool.query(queries.saveFile, [file_id, jsonContent]);
+    res.status(200).json({ message: "File saved successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+const getInitialContentOfFile = async (req, res) => {
+  const { file_id } = req.query;
+  try {
+    const result = await pool.query(queries.getInitialContentOfFile, [file_id]);
+    res.status(200).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 module.exports = {
   getAllProjects,
   addProject,
@@ -259,4 +285,6 @@ module.exports = {
   userSearch,
   getLogs,
   getMessages,
+  saveFile,
+  getInitialContentOfFile
 };

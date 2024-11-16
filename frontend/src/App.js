@@ -9,7 +9,6 @@ import Editor from "./pages/Editor";
 import AboutUS from "./pages/AboutUs";
 import HomePage from "./pages/HomePage";
 import ProjectPage from "./pages/ProjectPage";
-import ProfilePage from "./pages/ProfilePage";
 import PageNotFound from "./pages/PageNotFound";
 import ProtectedRoute from "./pages/ProtectedRoute";
 
@@ -53,7 +52,6 @@ function App() {
           <Route exact path="/" element={<ProtectedRoute Component={HomePage} />} />
           <Route exact path="/aboutus" element={<ProtectedRoute Component={AboutUS} />} />
           <Route exact path="/project" element={<ProtectedRoute Component={ProjectPage} />} />
-          <Route exact path="/profile" element={<ProtectedRoute Component={ProfilePage} />} />
           <Route exact path="/project/:projectId" element={<ProtectedRoute Component={Editor} />} />
           <Route exact path="*" element={<PageNotFound />} />
         </Routes>

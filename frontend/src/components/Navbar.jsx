@@ -39,10 +39,10 @@ const Navbar = () => {
     }
 
     // Bind the event listener
-    document.addEventListener("click", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
       // Unbind the event listener on cleanup
-      document.removeEventListener("click", handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [handleCloseProfile]);
 
@@ -88,6 +88,9 @@ const Navbar = () => {
     color: "#134611",
   };
 
+  useEffect(() => {
+    console.log(isProfileOpen);
+  }, [isProfileOpen]);
 
   return (
     <nav className="navbar navbar-expand-lg p-1" style={navbarStyle}>
@@ -160,11 +163,10 @@ const Navbar = () => {
                 src={getAvatar(userInfo.profileImage)}
               />
             </Tooltip>
-            <Box sx={{ position: "relative" }}>
-              {isProfileOpen ? <Box ref={profileRef} sx={{ zIndex: 9999999, position: "absolute", right: 10, top: -6, bgcolor: "#FAFAFA", border: "1px solid black", borderRadius: "10px" }}>
+            {isProfileOpen ?
+              <Box ref={profileRef} sx={{ zIndex: 9999999, position: "fixed", right: 10, top: 80, bgcolor: "#FAFAFA", border: "1px solid black", borderRadius: "10px" }}>
                 <User handleClose={handleCloseProfile} />
               </Box> : null}
-            </Box>
           </ul>
         </div>
       </div>

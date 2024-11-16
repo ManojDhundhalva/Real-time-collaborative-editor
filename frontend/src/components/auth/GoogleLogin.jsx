@@ -12,7 +12,7 @@ import googleImg from "../../images/google.png";
 
 function GoogleLogin(props) {
 
-    const { setEmail, setName, setImage, setIsNewUser } = props;
+    const { setEmail, setName, setImage } = props;
 
     const { GET } = useAPI();
     const navigate = useNavigate();
@@ -23,6 +23,7 @@ function GoogleLogin(props) {
                 const { code } = authResult;
                 const { data } = await GET("/auth/google-credentials", { code });
                 const { accountExists } = data;
+                console.log("data", data);
 
                 if (accountExists) {
                     toast.success(data.message);
@@ -32,7 +33,7 @@ function GoogleLogin(props) {
                     setEmail(email);
                     setName(name);
                     setImage(image);
-                    setIsNewUser(true);
+                    // setIsNewUser(true);
                 }
             } else {
                 toast.error("google auth error");

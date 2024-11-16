@@ -1,39 +1,17 @@
 import React, { useEffect, useState } from "react";
-import AppBar from "@mui/material/AppBar";
-import Toolbar from "@mui/material/Toolbar";
-import Typography from "@mui/material/Typography";
-import Button from "@mui/material/Button";
-import IconButton from "@mui/material/IconButton";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   Box,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogContentText,
-  TextField,
-  Grid,
-  DialogActions,
-  InputAdornment,
   Tooltip,
   Zoom,
+  Typography,
+  IconButton,
+  Avatar,
 } from "@mui/material";
-import PersonRoundedIcon from "@mui/icons-material/PersonRounded";
-import ShareIcon from "@mui/icons-material/Share";
-import HistoryIcon from "@mui/icons-material/History";
-import CommentIcon from "@mui/icons-material/Comment";
-import VideoCallIcon from "@mui/icons-material/VideoCall";
 import GroupAddRoundedIcon from "@mui/icons-material/GroupAddRounded";
-import Avatar from "@mui/material/Avatar";
-import DescriptionIcon from "@mui/icons-material/Description";
-import { styled } from "@mui/system";
-import { useNavigate, useParams } from "react-router-dom";
 import Contributor from "./Contributor";
 import useAPI from "../hooks/api";
-import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
-import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
-import CircularProgress from "@mui/material/CircularProgress";
 import { useRef } from "react";
-import AccountBoxRoundedIcon from "@mui/icons-material/AccountBoxRounded"
 import DescriptionRoundedIcon from '@mui/icons-material/DescriptionRounded';
 import Cookies from "js-cookie"
 import User from "./User";
@@ -100,13 +78,15 @@ const Tools = ({ liveUsers }) => {
   const handleClickOpenDialog = () => setOpenDialog(true);
   const handleCloseDialog = () => setOpenDialog(false);
 
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const getProjectName = async () => {
       try {
-        const results = await GET("/project/get-project-name", { projectId });
-        console.log(results.data.project_name);
-        setProjectName((prev) => results.data.project_name);
+        const { data } = await GET("/project/get-project-name", { projectId });
+        console.log("TOOLS", data);
+        setProjectName((prev) => data.project_name);
+        setIsAdmin((prev) => data.is_admin);
       } catch (err) {
         console.log("err ->", err);
       }
@@ -210,25 +190,30 @@ const Tools = ({ liveUsers }) => {
                 />
               </Tooltip>
             ))}
-          <Box sx={{ ml: 1 }}>
-            <Tooltip
-              title="Add Contributors"
-              leaveDelay={0}
-              componentsProps={{
-                tooltip: {
-                  sx: {
-                    bgcolor: "common.black",
-                    color: "white",
-                    transition: "none",
-                  },
-                },
-              }}
-            >
-              <button onClick={handleClickOpenDialog}>
-                <GroupAddRoundedIcon />
-              </button>
-            </Tooltip>
+          <Box sx={{ m: 0, ml: 1, p: 0 }}>
+            <Typography fontWeight="bold" fontSize="x-large">|</Typography>
           </Box>
+          {isAdmin ?
+            <Box sx={{ ml: 1 }}>
+              <Tooltip
+                title="Add Contributors"
+                leaveDelay={0}
+                componentsProps={{
+                  tooltip: {
+                    sx: {
+                      bgcolor: "common.black",
+                      color: "white",
+                      transition: "none",
+                    },
+                  },
+                }}
+              >
+                <button onClick={handleClickOpenDialog}>
+                  <GroupAddRoundedIcon />
+                </button>
+              </Tooltip>
+            </Box>
+            : null}
           <Box sx={{ mx: 1 }}>
             <Tooltip title="profile"
               enterDelay={200}

@@ -188,7 +188,6 @@ function User(props) {
                     </button>
                 </Box>
             </Box>
-            
         </>
     )
 }

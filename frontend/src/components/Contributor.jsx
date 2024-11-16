@@ -101,6 +101,7 @@ function Contributor(props) {
       const results = await POST("/project/add-contributor", { projectId, contributors });
       console.log(results);
       toast.success(`Added, "${contributors.length}"`);
+      setSelectedUsers([]);
     } catch (err) {
       console.log("err ->", err);
       toast.success(`NOT Added, "${contributors.length}"`);
@@ -121,9 +122,10 @@ function Contributor(props) {
   return (
     <Box sx={{
       minWidth: "300px",
+      minHeight: "240px",
       display: "flex",
       flexDirection: "column",
-      justifyContent: "center",
+      justifyContent: "space-evenly",
       alignItems: "center",
       position: "fixed",
       top: "50%",
