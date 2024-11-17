@@ -3,6 +3,7 @@ const config = require('../../config');
 const { generate4DigitRandomCode } = require("../../utils/generators");
 const pool = require('../../db');
 const queries = require("../../queries/auth/mail");
+const { getText, getHTML } = require("../../utils/mail");
 
 const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -25,9 +26,9 @@ async function main(sourceMail, destinationMail, username, code) {
                 address: sourceMail,  // sender address
             },
             to: destinationMail, // list of receivers
-            subject: "CoEdit Authentication", // Subject line
-            text: `Hello ${username}`, // plain text body
-            html: `<h1><b>YOUR CODE: ${code}</b></h1>`, // html body
+            subject: "CoEdit Authentication Code", // Subject line
+            text: getText(username, code), // plain text body
+            html: getHTML(username, code), // html body
         });
 
         return info.messageId;

@@ -273,10 +273,17 @@ export default function RegisterPage({ hasAccount, setHasAccount }) {
         }
     };
 
+
     useEffect(() => {
-        if (image && email && name) {
-            setIsNewUser(true);
+        const delayAndSetUser = async () => {
+            if (image && email && name) {
+                // Add 0.5-second delay before proceeding
+                await new Promise(resolve => setTimeout(resolve, 500));
+                setIsNewUser(true);
+            }
         }
+
+        delayAndSetUser();
     }, [image, email, name]);
 
     return (

@@ -72,9 +72,8 @@ import "codemirror/addon/hint/show-hint.css";
 import "codemirror/addon/hint/show-hint";
 import "codemirror/addon/hint/anyword-hint";
 
-import "codemirror/keymap/emacs";
 import "codemirror/keymap/sublime";
-import "codemirror/keymap/vim";
+
 
 import debounce from "lodash.debounce";
 import useAPI from "../hooks/api";
@@ -89,6 +88,10 @@ import CheckBoxOutlineBlankRoundedIcon from '@mui/icons-material/CheckBoxOutline
 import HistoryRoundedIcon from '@mui/icons-material/HistoryRounded';
 import OpenInFullRoundedIcon from '@mui/icons-material/OpenInFullRounded';
 import CloudDoneRoundedIcon from '@mui/icons-material/CloudDoneRounded';
+import { LANGUAGE_DATA } from "../utils/constants";
+import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
+import { toast } from "react-hot-toast";
+import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
 
 /*
     logs: [
@@ -107,7 +110,7 @@ import CloudDoneRoundedIcon from '@mui/icons-material/CloudDoneRounded';
 
 import { getAvatar } from "../utils/avatar";
 import { themes } from "../utils/code-editor-themes";
-import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
+import { executeCode } from "../utils/api";
 
 const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage }) => {
   const { GET, POST } = useAPI();
@@ -125,6 +128,7 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
   const [isLoadingContent, setIsLoadingContent] = useState(false);
   const [isLoadingSave, setIsLoadingSave] = useState(false);
 
+  const [isLogOpen, setIsLogOpen] = useState(false);
   const getFileLogs = async () => {
     setIsLoadingLogs(true);
     try {
@@ -139,7 +143,7 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
   };
   useEffect(() => {
     getFileLogs();
-  }, []);
+  }, [isLogOpen]);
 
   // **NEW** State for the initial content
   // const [initialContent, setInitialContent] = useState("");
@@ -608,7 +612,7 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
   }, []);
 
   const logContainerRef = useRef(null);
-  const [isLogOpen, setIsLogOpen] = useState(false);
+
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
 
@@ -674,6 +678,68 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
   }, [handleThemeChange]);
 
 
+  const [isRunningCode, setIsRunningCode] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [codeOutput, setCodeOutput] = useState({});
+  const [selectLanguage, setSelectLanguage] = useState({
+    language: 'javascript',
+    version: '18.15.0',
+    codeSnippet: `function welcome() {\n\tconsole.log("Welcome to CHAP The code editor!");\n}\n\nwelcome();\n`,
+    info: 'JavaScript does not have built-in Queue and Priority Queue data structures so you may use datastructures-js/queue and datastructures-js/priority-queue instead.',
+    icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg',
+  });
+  // Handle selection change
+  const handleSelectLanguage = (e) => {
+    const selectedLanguage = LANGUAGE_DATA.find(
+      (item) => item.language === e.target.value
+    );
+    setSelectLanguage(selectedLanguage);
+    console.log('Selected Language:', selectedLanguage);
+  };
+
+  const handleRunCode = async () => {
+    const { language, version } = selectLanguage;
+    console.log("selectLanguage", selectLanguage);
+
+    const sourceCode = editorInstance.current.getValue();
+
+    console.log("language, version", language, version);
+
+    if (!sourceCode || sourceCode.trim() === "") {
+      toast("Code is empty",
+        {
+          icon: <CancelRoundedIcon />,
+          style: {
+            borderRadius: '10px',
+            background: '#333',
+            color: '#fff',
+          },
+        }
+      );
+      return;
+    }
+
+    setIsRunningCode(true);
+    try {
+      const results = await executeCode(language, version, sourceCode, codeInput);
+      console.log("results", results);
+      setCodeOutput(results);
+    } catch (error) {
+      toast(error?.message || "Something went wrong!",
+        {
+          icon: <CancelRoundedIcon />,
+          style: {
+            borderRadius: '10px',
+            background: '#333',
+            color: '#fff',
+          },
+        }
+      );
+    } finally {
+      setIsRunningCode(false);
+    }
+  }
+
   return (
     <Box sx={{ position: "absolute", width: "100%", height: "100%" }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", p: "2px" }}>
@@ -681,7 +747,7 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
           <Typography sx={{ color: "white" }}>{fileName}</Typography>
         </Box>
         {isLoadingContent ? (
-          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+          <Box sx={{ position: "absolute", left: "50%", display: "flex", transform: "translateX(-50%)", justifyContent: "center", alignItems: "center" }}>
             <Typography sx={{ color: "white" }}>Loading Content of file....</Typography>
             <CircularProgress
               size={14}
@@ -693,7 +759,76 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
               }}
             />
           </Box>
-        ) : null}
+        ) :
+          <Box sx={{ display: "flex", position: "absolute", left: "50%", transform: "translateX(-50%)" }}>
+            {/* {selectLanguage.icon ?
+              <Box>
+                <img
+                  src={selectLanguage.icon}
+                  alt={selectLanguage.language + " icon"}
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
+                  decoding="async"
+                />
+              </Box> : null} */}
+            <select id="style-1" value={selectLanguage.language} onChange={handleSelectLanguage}>
+              {LANGUAGE_DATA.map((lang, index) => (
+                <option key={index} value={lang.language}>
+                  {lang.language} ({lang.version})
+                </option>
+              ))}
+            </select>
+            <Box sx={{ mx: 1 }}>
+              {isRunningCode ?
+                <Box
+                  id="run-button"
+                  sx={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    padding: 0,
+                    margin: 0,
+                    color: "white",
+                    border: "none"
+                  }}>
+                  <CircularProgress
+                    size={20}
+                    thickness={6}
+                    sx={{
+                      color: "white",
+                      '& circle': { strokeLinecap: 'round' },
+                    }}
+                  />
+                </Box>
+                :
+                <Tooltip
+                  title={"run"}
+                  placement="top"
+                  componentsProps={{
+                    tooltip: {
+                      sx: {
+                        fontWeight: "bold",
+                        bgcolor: "common.black",
+                        "& .MuiTooltip-arrow": {
+                          color: "common.black",
+                        },
+                      },
+                    },
+                  }}
+                >
+                  <Box
+                    onClick={handleRunCode}
+                    id="run-button"
+                    sx={{ "&:hover": { bgcolor: "white", color: "black" }, cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", borderRadius: "6px", fontWeight: "bold", padding: 0, margin: 0, color: "white", border: "1px solid white" }}>
+                    <PlayArrowRoundedIcon />
+                  </Box>
+                </Tooltip>
+              }
+            </Box>
+          </Box>
+        }
         <Box sx={{ position: "relative", display: "flex" }}>
           {!isLoadingSave ?
             <Box sx={{ px: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
@@ -718,84 +853,6 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
               sx={{ p: "1px", cursor: "pointer", color: "white", borderRadius: "4px", "&:hover": { color: "black", bgcolor: "#CCCCCC" } }}
             />
           </Box>
-          {/* <div
-            onClick={toggleDropdown}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              minWidth: "200px",
-              borderRadius: "4px",
-              cursor: "pointer",
-              backgroundColor: "white",
-              paddingLeft: "6px",
-              paddingRight: "6px",
-            }}
-          >
-            <Typography fontWeight="bold">
-              <span style={{ color: "grey" }}>Theme: </span>{selectedTheme}
-            </Typography>
-            <ExpandMoreRoundedIcon sx={{ color: "black" }} />
-          </div> */}
-          {/* {isOpen && (
-            <div
-              ref={modalRef}
-              id="style-1"
-              style={{
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-                position: "absolute",
-                marginTop: "5px",
-                backgroundColor: "#F0F0F0",
-                maxHeight: "200px",
-                overflowY: "auto",
-                width: "100%",
-                zIndex: 1,
-              }}
-            >
-              <div
-                style={{
-                  cursor: "pointer",
-                  backgroundColor: "#fff",
-                  padding: "4px",
-                }}
-              >
-                <div
-                  style={{
-                    paddingLeft: "6px",
-                    paddingRight: "6px",
-                    color: "white",
-                    cursor: "pointer",
-                    borderRadius: "4px",
-                    backgroundColor: "#4D4D4D",
-                  }}>
-                  Select Themes
-                </div>
-              </div>
-              {themes.map((theme, index) => (
-                <div
-                  key={index}
-                  onClick={() => handleThemeChange(theme.name)}
-                  style={{
-                    cursor: "pointer",
-                    backgroundColor: "#fff",
-                    padding: "4px",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      px: "6px",
-                      color: "black",
-                      bgcolor: "#fff",
-                      cursor: "pointer",
-                      borderRadius: "4px",
-                      "&:hover": { bgcolor: "#4D4D4D", color: "white" },
-                    }}>
-                    {theme.name}
-                  </Box>
-                </div>
-              ))}
-            </div>
-          )} */}
           <select id="style-1" value={selectedTheme} onChange={(e) => handleThemeSelect(e.target.value)}>
             {themes.map((theme, index) => (
               <option key={index} value={theme.name}>{theme.name}</option>
@@ -803,6 +860,7 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
           </select>
         </Box>
       </Box>
+
       <div
         style={{
           border: "1px solid black",
@@ -812,7 +870,174 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
           height: "100%",
         }}
       >
-        <textarea ref={editorRef}></textarea>
+        <textarea ref={editorRef}>
+        </textarea>
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            zIndex: 99999,
+            maxWidth: "400px",
+            width: "100%", // Adjust width as needed
+            height: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            backgroundColor: "#1e1e1e", // Optional: background color for visibility
+            border: "1px solid #444",
+            borderRadius: "8px 0 0 0", // Rounded corners for top-left
+            overflow: "hidden",
+          }}
+        >
+          {/* Input Section */}
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              borderBottom: "1px solid #444",
+            }}
+          >
+            <Typography sx={{ color: "white", padding: "8px" }}>Input</Typography>
+            <Box
+              sx={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                padding: "8px",
+              }}
+            >
+              <textarea
+                id="style-1"
+                style={{
+                  borderRadius: "6px",
+                  fontWeight: "bold",
+                  width: "100%",
+                  height: "100%",
+                  resize: "none",
+                  padding: "8px",
+                  boxSizing: "border-box",
+                  backgroundColor: "#222",
+                  color: "white",
+                  border: "1px solid #444",
+                }}
+                name="code-input"
+                value={codeInput}
+                onChange={(e) => setCodeInput(e.target.value)}
+              />
+            </Box>
+          </Box>
+
+          {/* Output Section */}
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                padding: "8px",
+                borderBottom: "1px solid #444",
+              }}
+            >
+              <Typography sx={{ color: "white" }}>Output</Typography>
+              {codeOutput.stderr && (
+                <>
+                  <Typography
+                    variant="caption"
+                    fontWeight="bold"
+                    sx={{
+                      borderRadius: "4px",
+                      px: 1,
+                      mx: 1,
+                      color: "black",
+                      bgcolor: "white",
+                    }}
+                  >
+                    Code: {codeOutput.code}
+                  </Typography>
+                  {codeOutput.signal && <Typography
+                    variant="caption"
+                    fontWeight="bold"
+                    sx={{
+                      borderRadius: "4px",
+                      px: 1,
+                      color: "black",
+                      bgcolor: "white",
+                    }}
+                  >
+                    Signal: {codeOutput.signal}
+                  </Typography>}
+                </>
+              )}
+              {codeOutput.stdout && !codeOutput.stderr && !isRunningCode &&
+                <Typography
+                  variant="caption"
+                  fontWeight="bold"
+                  sx={{
+                    borderRadius: "4px",
+                    px: 1,
+                    mx: 1,
+                    color: "black",
+                    bgcolor: "white",
+                  }}
+                >
+                  Success
+                </Typography>}
+              {!codeOutput.stdout && codeOutput.stderr && !isRunningCode &&
+                <Typography
+                  variant="caption"
+                  fontWeight="bold"
+                  sx={{
+                    borderRadius: "4px",
+                    px: 1,
+                    color: "black",
+                    bgcolor: "white",
+                  }}
+                >
+                  Failed
+                </Typography>}
+            </Box>
+            <Box
+              sx={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                padding: "8px",
+              }}
+            >
+              <textarea
+                id="style-1"
+                placeholder="Output"
+                readOnly
+                name="code-output"
+                style={{
+                  borderRadius: "6px",
+                  fontWeight: "bold",
+                  width: "100%",
+                  height: "100%",
+                  resize: "none",
+                  padding: "8px",
+                  boxSizing: "border-box",
+                  backgroundColor: "#222",
+                  color: codeOutput.stderr ? "red" : "#b7e4c7",
+                  border: "1px solid #444",
+                }}
+                value={
+                  codeOutput.stderr
+                    ? codeOutput.output.substring(
+                      codeOutput.output.indexOf("\n") + 1
+                    )
+                    : codeOutput.output
+                }
+              />
+            </Box>
+          </Box>
+        </Box>
         {/* Logs */}
         <Box ref={logRef} sx={{ display: isLogOpen ? "block" : "none", position: "absolute", top: 0, right: 0, zIndex: 99999, bgcolor: "white", p: 1, borderRadius: "10px" }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #404040" }}>
@@ -886,7 +1111,16 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
                 </Box>
                 <Box sx={{ px: 1, width: "100%" }}>
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", bgcolor: log.removed ? "#ee6055" : "#358f80", borderRadius: "6px", px: "6px", marginBottom: "4px" }}>
-                    <Typography sx={{ color: "white" }}>"{log.text || log.removed}"</Typography>
+                    <Typography
+                      sx={{
+                        color: "white",
+                        overflow: "hidden",        // Hide overflow text
+                        textOverflow: "ellipsis",  // Show ellipsis when text overflows
+                        whiteSpace: "nowrap",
+                        maxWidth: isMaximized ? "500px" : "200px",         // Set a fixed width for truncation (adjust as needed)
+                      }}>
+                      "{log.text || log.removed}"
+                    </Typography>
                     <Typography sx={{ color: "white" }}>{log.origin}</Typography>
                   </Box>
                   <Box sx={{ display: "flex", justifyContent: "space-between" }}>

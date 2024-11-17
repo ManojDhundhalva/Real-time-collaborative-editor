@@ -211,7 +211,13 @@ AND username NOT IN (
 `;
 
 const getLogs = `
-SELECT l.*, u.profile_image AS image FROM logs AS l JOIN users AS u ON l.username = u.username WHERE file_id = $1;
+SELECT l.*, u.profile_image AS image 
+FROM logs AS l 
+JOIN users AS u 
+ON l.username = u.username 
+WHERE file_id = $1 
+ORDER BY l.logs_timestamp DESC
+LIMIT 15;
 `;
 
 const getMessages = `   

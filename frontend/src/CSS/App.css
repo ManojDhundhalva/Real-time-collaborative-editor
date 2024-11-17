@@ -88,3 +88,7 @@ table tbody tr:hover {
 select {
   max-height: 400px;
 }
+
+select, option {
+  font-weight: bold;
+}
