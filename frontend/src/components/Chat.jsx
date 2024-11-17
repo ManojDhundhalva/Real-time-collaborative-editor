@@ -168,6 +168,11 @@ function Chat(props) {
                                     sx={{ width: 38, height: 38, fontSize: 16, border: "1px solid black" }}
                                     alt={msg.username}
                                     src={getAvatar(msg.image)}
+                                    imgProps={{
+                                        crossOrigin: "anonymous",
+                                        referrerPolicy: "no-referrer",
+                                        decoding: "async",
+                                    }}
                                 />
                             </Box>
                             <Box sx={{ py: 1, width: "100%", display: "flex", justifyContent: "flex-start", alignItems: "flex-start", flexDirection: "column" }}>

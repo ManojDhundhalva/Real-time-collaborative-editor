@@ -147,6 +147,11 @@ const Tabs = (props) => {
                                             sx={{ width: 42, height: 42, border: "1px solid black", }}
                                             alt={user.username}
                                             src={getAvatar(user.image)}
+                                            imgProps={{
+                                              crossOrigin: "anonymous",
+                                              referrerPolicy: "no-referrer",
+                                              decoding: "async",
+                                            }}
                                           />
                                         </Tooltip>
                                       </StyledBadge>
@@ -176,6 +181,11 @@ const Tabs = (props) => {
                                           sx={{ width: 42, height: 42, border: "1px solid black", }}
                                           alt={user.username}
                                           src={getAvatar(user.image)}
+                                          imgProps={{
+                                            crossOrigin: "anonymous",
+                                            referrerPolicy: "no-referrer",
+                                            decoding: "async",
+                                          }}
                                         />
                                       </Tooltip>)}
                                     <Typography fontWeight="bold" sx={{ px: 1 }}>{user.username}</Typography>

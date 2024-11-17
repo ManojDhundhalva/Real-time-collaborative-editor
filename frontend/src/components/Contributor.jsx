@@ -161,7 +161,14 @@ function Contributor(props) {
           <Chip
             label={`${user.username}`} // Adjusted for firstname and lastname
             onDelete={() => handleRemoveUser(user)}
-            avatar={<Avatar src={getAvatar(user.profile_image)} alt="profile-image" sx={{ width: 20, height: 20, border: "1px solid black" }} />}
+            avatar={
+              <Avatar src={getAvatar(user.profile_image)} alt="profile-image" sx={{ width: 20, height: 20, border: "1px solid black" }}
+                imgProps={{
+                  crossOrigin: "anonymous",
+                  referrerPolicy: "no-referrer",
+                  decoding: "async",
+                }} />
+            }
             sx={{
               height: "40px", display: "flex", alignItems: "center",
               "& .MuiChip-deleteIcon": {
@@ -261,7 +268,14 @@ function Contributor(props) {
                   onClick={() => handleSelectUser(user)}
                 >
                   <Box>
-                    <Avatar src={getAvatar(user.profile_image)} alt="profile-image" sx={{ border: "1px solid black" }} />
+                    <Avatar
+                      src={getAvatar(user.profile_image)}
+                      alt="profile-image"
+                      sx={{ border: "1px solid black" }} imgProps={{
+                        crossOrigin: "anonymous",
+                        referrerPolicy: "no-referrer",
+                        decoding: "async",
+                      }} />
                   </Box>
                   <Box sx={{ mx: 1 }}>
                     <Typography fontWeight="bold">

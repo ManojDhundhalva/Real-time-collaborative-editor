@@ -112,6 +112,11 @@ function User(props) {
                         sx={{ bgcolor: "#333333", width: 150, height: 150, fontSize: 75, border: "2px solid black" }}
                         alt={userInfo.userName}
                         src={getAvatar(userInfo.profileImage)}
+                        imgProps={{
+                            crossOrigin: "anonymous",
+                            referrerPolicy: "no-referrer",
+                            decoding: "async",
+                        }}
                     />
                 </Box>
                 <Box sx={{ m: 1, my: 2 }}  >

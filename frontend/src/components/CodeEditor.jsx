@@ -876,6 +876,11 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
                       sx={{ width: 42, height: 42, border: "1px solid black", }}
                       alt={log.username}
                       src={getAvatar(log.image)}
+                      imgProps={{
+                        crossOrigin: "anonymous",
+                        referrerPolicy: "no-referrer",
+                        decoding: "async",
+                      }}
                     />
                   </Tooltip>
                 </Box>

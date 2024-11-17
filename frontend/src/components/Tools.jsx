@@ -187,6 +187,11 @@ const Tools = ({ liveUsers }) => {
                   sx={{ width: 42, height: 42, border: "1px solid black", }}
                   alt={liveUser.username}
                   src={getAvatar(liveUser.image)}
+                  imgProps={{
+                    crossOrigin: "anonymous",
+                    referrerPolicy: "no-referrer",
+                    decoding: "async",
+                  }}
                 />
               </Tooltip>
             ))}
@@ -233,6 +238,11 @@ const Tools = ({ liveUsers }) => {
                 sx={{ cursor: "pointer", width: 42, height: 42, border: "1px solid black", }}
                 alt={userInfo.userName}
                 src={getAvatar(userInfo.profileImage)}
+                imgProps={{
+                  crossOrigin: "anonymous",
+                  referrerPolicy: "no-referrer",
+                  decoding: "async",
+                }}
               />
             </Tooltip>
             {isProfileVisible ? <Box ref={profileRef} sx={{ zIndex: 9999999, position: "absolute", right: 10, top: 54, bgcolor: "#FAFAFA", border: "1px solid black", borderRadius: "10px" }}>

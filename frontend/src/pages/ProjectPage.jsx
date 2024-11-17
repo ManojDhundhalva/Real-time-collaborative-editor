@@ -450,6 +450,11 @@ function ProjectPage() {
               sx={{ cursor: "pointer", width: 46, height: 46, border: "1px solid black", }}
               alt={userInfo.userName}
               src={getAvatar(userInfo.profileImage)}
+              imgProps={{
+                crossOrigin: "anonymous",
+                referrerPolicy: "no-referrer",
+                decoding: "async",
+              }}
             />
           </Tooltip>
         </Box>
@@ -620,6 +625,11 @@ function ProjectPage() {
                           src={getAvatar(project.image)}
                           sx={{ width: 46, height: 46, border: "1px solid black" }}
                           alt="admin-image"
+                          imgProps={{
+                            crossOrigin: "anonymous",
+                            referrerPolicy: "no-referrer",
+                            decoding: "async",
+                          }}
                         />
                       </Tooltip>
                     </Box>

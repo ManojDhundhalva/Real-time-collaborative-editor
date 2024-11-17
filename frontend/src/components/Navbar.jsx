@@ -161,6 +161,11 @@ const Navbar = () => {
                 sx={{ cursor: "pointer", width: 46, height: 46, border: "1px solid black", }}
                 alt={userInfo.userName}
                 src={getAvatar(userInfo.profileImage)}
+                imgProps={{
+                  crossOrigin: "anonymous",
+                  referrerPolicy: "no-referrer",
+                  decoding: "async",
+                }}
               />
             </Tooltip>
             {isProfileOpen ?

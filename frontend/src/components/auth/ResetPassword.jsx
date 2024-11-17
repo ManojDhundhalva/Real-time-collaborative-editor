@@ -87,6 +87,9 @@ function ResetPassword(props) {
                         src={getAvatar(image)}
                         alt='profile-picture'
                         style={{ width: 120, objectFit: "cover" }}
+                        decode="async"
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer"
                     />
                 </Box>
                 <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", flexDirection: "column", my: 2 }}>
