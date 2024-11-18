@@ -20,7 +20,7 @@ import Chat from "../components/Chat";
 const styles = {
   container: {
     display: "flex",
-    height: "100%",
+    height: "100vh", // Ensure the container takes full viewport height
   },
   sidebar: {
     minWidth: "200px",
@@ -28,6 +28,7 @@ const styles = {
     color: "white",
     overflowY: "auto",
     transition: "width 0.2s ease",
+    height: "100%", // Ensure the sidebar takes full height of the container
   },
   dragHandle: {
     width: "5px",
@@ -293,7 +294,7 @@ function Editor() {
   }, [handleCloseChat]);
 
   return (
-    <div style={{ height: "100vh" }}>
+    <div style={{ display: "flex", height: "100vh", flexDirection: "column", width: "100%" }}>
       {isChatOpen ? (
         <Box sx={{ position: 'fixed', left: 6, bottom: 6, zIndex: 9999 }}>
           {/* Outer Box Container */}
@@ -390,7 +391,7 @@ function Editor() {
                   handleCloseTab={handleCloseTab}
                 />
               </Box>
-              <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
+              <Box sx={{ position: "relative", width: "100%", height: "calc(100vh - 94px)", overflow: "hidden" }}>
                 {tabs.length > 0 &&
                   tabs.map((tab) =>
                     tab && (
@@ -400,27 +401,36 @@ function Editor() {
                           width: "100%",
                           height: "100%",
                           position: "absolute",
+                          top: 0,
+                          left: 0,
+                          zIndex: tab.id === selectedFileId ? 100 : 0,
+                          overflow: "hidden", // Prevent overflow issues
                         }}
                       >
                         <Box
                           sx={{
                             width: "100%",
                             height: "100%",
-                            position: "absolute",
-                            top: 0,
-                            left: 0,
+                            position: "relative",
                             backgroundColor: "black",
-                            zIndex: tab.id === selectedFileId ? 100 : 0,
                           }}
                         >
-                          <CodeEditor
-                            fileName={tab.name}
-                            socket={socket}
-                            fileId={tab.id}
-                            username={Cookies.get("username")}
-                            localImage={Cookies.get("image")}
-                            setTabs={setTabs}
-                          />
+                          <Box
+                            sx={{
+                              width: "100%",
+                              height: "100%",
+                              overflow: "auto", // Enable scrolling for the CodeEditor content
+                            }}
+                          >
+                            <CodeEditor
+                              fileName={tab.name}
+                              socket={socket}
+                              fileId={tab.id}
+                              username={Cookies.get("username")}
+                              localImage={Cookies.get("image")}
+                              setTabs={setTabs}
+                            />
+                          </Box>
                         </Box>
                       </Box>
                     )

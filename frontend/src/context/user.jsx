@@ -21,6 +21,7 @@ export const UserProvider = ({ children }) => {
         createdAt: "",
         updatedOn: "",
         profileImage: "",
+        image: "",
     });
 
     const getUser = async () => {
@@ -34,6 +35,7 @@ export const UserProvider = ({ children }) => {
                 createdAt: data.created_at,
                 updatedOn: data.updated_on,
                 profileImage: data.profile_image,
+                image: data.image,
             });
         } catch (error) {
             console.error("Error fetching user data: ", error);

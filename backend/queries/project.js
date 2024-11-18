@@ -234,6 +234,12 @@ const getInitialContentOfFile = `
 SELECT file_data FROM files WHERE file_id = $1;
 `;
 
+const updateProjectName = `
+UPDATE projects 
+SET project_name = $3
+WHERE project_created_by = $1 AND project_id = $2;
+`;
+
 module.exports = {
     getAllProjects,
     addProjects,
@@ -258,4 +264,5 @@ module.exports = {
     getMessages,
     saveFile,
     getInitialContentOfFile,
+    updateProjectName,
 };

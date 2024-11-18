@@ -20,5 +20,6 @@ router.get("/code-editor/logs", verifyTokenAndAuthorization, controller.getLogs)
 router.get("/chat/messages", verifyTokenAndAuthorization, controller.getMessages);
 router.post("/code-editor/save", verifyTokenAndAuthorization, controller.saveFile);
 router.get("/code-editor/content", verifyTokenAndAuthorization, controller.getInitialContentOfFile);
+router.post("/update/project-name", verifyTokenAndAuthorization, controller.updateProjectName);
 
 module.exports = router;

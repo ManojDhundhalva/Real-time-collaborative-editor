@@ -575,7 +575,9 @@ export default function Login({ hasAccount, setHasAccount }) {
                                         >
                                             <KeyboardBackspaceRoundedIcon sx={{ color: "#333333" }} />
                                         </IconButton>
-                                        <img src={image} alt="profile-image"
+                                        <img
+                                            src={image}
+                                            alt="profile-image"
                                             style={{
                                                 width: "150px",
                                                 height: "150px",
@@ -583,6 +585,9 @@ export default function Login({ hasAccount, setHasAccount }) {
                                                 borderRadius: "50%",
                                                 border: "1px solid #333333",
                                             }}
+                                            crossOrigin="anonymous"
+                                            referrerPolicy="no-referrer"
+                                            decoding="async"
                                         />
                                         <Typography fontWeight="bold" sx={{ my: 2 }}>{email}</Typography>
                                         <Box sx={{ display: "flex", justifyContent: "flex-start", width: "100%", p: "12px", my: 2, borderRadius: 3, border: "1px solid #333333" }}>

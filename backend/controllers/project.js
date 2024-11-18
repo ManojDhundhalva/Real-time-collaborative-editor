@@ -70,10 +70,10 @@ const getAllFiles = async (req, resp) => {
       req.query.projectId,
     ]);
 
-    resp.status(200).json(results.rows);
+    return resp.status(200).json(results.rows);
   } catch (err) {
     console.error("Error ->", err);
-    resp.status(500).json({ message: "Internal Server Error" });
+    return resp.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -94,10 +94,10 @@ const createANewFile = async (req, resp) => {
       extension,
     ]);
 
-    resp.status(200).json({ message: "File Created Successfully" });
+    return resp.status(200).json({ message: "File Created Successfully" });
   } catch (err) {
     console.error("Error ->", err);
-    resp.status(500).json({ message: "Internal Server Error" });
+    return resp.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -108,10 +108,10 @@ const getProjectName = async (req, resp) => {
       req.user.username,
     ]);
 
-    resp.status(200).json(results.rows[0]);
+    return resp.status(200).json(results.rows[0]);
   } catch (err) {
     console.error("Error ->", err);
-    resp.status(500).json({ message: "Internal Server Error" });
+    return resp.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -122,10 +122,10 @@ const addContributor = async (req, resp) => {
       await pool.query(queries.addContributor, [projectId, contributor.username]);
     }
 
-    resp.status(200).json({ message: "Added contributors" });
+    return resp.status(200).json({ message: "Added contributors" });
   } catch (err) {
     console.error("Error ->", err);
-    resp.status(500).json({ message: "Internal Server Error" });
+    return resp.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -135,10 +135,10 @@ const getAllActiveFiles = async (req, resp) => {
       req.user.username,
     ]);
 
-    resp.status(200).json(results.rows);
+    return resp.status(200).json(results.rows);
   } catch (err) {
     console.error("Error ->", err);
-    resp.status(500).json({ message: "Internal Server Error" });
+    return resp.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -149,10 +149,10 @@ const getFileTree = async (req, resp) => {
       req.user.id,
     ]);
 
-    resp.status(200).json(results.rows);
+    return resp.status(200).json(results.rows);
   } catch (err) {
     console.error("Error ->", err);
-    resp.status(500).json({ message: "Internal Server Error" });
+    return resp.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -168,10 +168,10 @@ const getInitialTabs = async (req, resp) => {
       req.query.projectId,
     ]);
 
-    resp.status(200).json(results.rows);
+    return resp.status(200).json(results.rows);
   } catch (err) {
     console.error("Error ->", err);
-    resp.status(500).json({ message: "Internal Server Error" });
+    return resp.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -181,10 +181,10 @@ const getLiveUsers = async (req, resp) => {
       req.query.projectId,
     ]);
 
-    resp.status(200).json(results.rows);
+    return resp.status(200).json(results.rows);
   } catch (err) {
     console.error("Error ->", err);
-    resp.status(500).json({ message: "Internal Server Error" });
+    return resp.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -194,19 +194,19 @@ const setExpandData = async (req, resp) => {
     try {
       await pool.query(queries.insertExpandData, [req.user.id, file_tree_id]);
 
-      resp.status(200).json({ message: "Update expand" });
+      return resp.status(200).json({ message: "Update expand" });
     } catch (err) {
       console.error("Error ->", err);
-      resp.status(500).json({ message: "Internal Server Error" });
+      return resp.status(500).json({ message: "Internal Server Error" });
     }
   } else {
     try {
       await pool.query(queries.deleteExpandData, [req.user.id, file_tree_id]);
 
-      resp.status(200).json({ message: "DELETED expand" });
+      return resp.status(200).json({ message: "DELETED expand" });
     } catch (err) {
       console.error("Error ->", err);
-      resp.status(500).json({ message: "Internal Server Error" });
+      return resp.status(500).json({ message: "Internal Server Error" });
     }
   }
 };
@@ -218,10 +218,10 @@ const userSearch = async (req, res) => {
       queries.userSearch,
       [`%${q}%`, projectId] // Exclude the current user's username
     );
-    res.status(200).json(result.rows);
+    return res.status(200).json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -229,10 +229,10 @@ const getLogs = async (req, res) => {
   const { file_id } = req.query;
   try {
     const result = await pool.query(queries.getLogs, [file_id]);
-    res.status(200).json(result.rows);
+    return res.status(200).json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -240,10 +240,10 @@ const getMessages = async (req, res) => {
   const { project_id } = req.query;
   try {
     const result = await pool.query(queries.getMessages, [project_id]);
-    res.status(200).json(result.rows);
+    return res.status(200).json(result.rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -252,21 +252,43 @@ const saveFile = async (req, res) => {
   const jsonContent = JSON.stringify({ content });
   try {
     await pool.query(queries.saveFile, [file_id, jsonContent]);
-    res.status(200).json({ message: "File saved successfully" });
+    return res.status(200).json({ message: "File saved successfully" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
 const getInitialContentOfFile = async (req, res) => {
-  const { file_id } = req.query;
   try {
+    const { file_id } = req.query;
+
+    if (!file_id) {
+      return res.status(400).json({ message: "Field are required!" });
+    }
+
     const result = await pool.query(queries.getInitialContentOfFile, [file_id]);
-    res.status(200).json(result.rows[0]);
+    return res.status(200).json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+const updateProjectName = async (req, res) => {
+  try {
+    const { project_id, project_name } = req.body;
+
+    if (!project_id || !project_name) {
+      return res.status(400).json({ message: "Field are required!" });
+    }
+
+    await pool.query(queries.updateProjectName, [req.user.username, project_id, project_name]);
+
+    return res.status(200).json({ message: "Updated successfully" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
 
@@ -286,5 +308,6 @@ module.exports = {
   getLogs,
   getMessages,
   saveFile,
-  getInitialContentOfFile
+  getInitialContentOfFile,
+  updateProjectName,
 };

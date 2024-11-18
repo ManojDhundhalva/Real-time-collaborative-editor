@@ -33,21 +33,19 @@ import {
 } from "@mui/material";
 
 // Material-UI Icons
-import MoreVertIcon from "@mui/icons-material/MoreVert";
-import GridOnRoundedIcon from "@mui/icons-material/GridOnRounded";
 import SortByAlphaRoundedIcon from "@mui/icons-material/SortByAlphaRounded";
 import FolderRoundedIcon from "@mui/icons-material/FolderRounded";
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import DescriptionRoundedIcon from '@mui/icons-material/DescriptionRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import TextFieldsRoundedIcon from '@mui/icons-material/TextFieldsRounded';
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
 import { isValidProjectName } from "../utils/validation"
-import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPencil, faXmark } from '@fortawesome/free-solid-svg-icons';  // Example icon
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';// Example icon
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
+import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
+import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
+import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
+
 const CustomDialog = ({ open, handleClose, setAllProjects }) => {
 
   const { POST } = useAPI();
@@ -106,10 +104,28 @@ const CustomDialog = ({ open, handleClose, setAllProjects }) => {
       const results = await POST("/project/add-project", { projectName: projectName.trim() });
       setProjectName("");
       setAllProjects(results.data.projects);
-      toast.success(results.data.message);
+      toast(results?.data?.message || "Added Successfully",
+        {
+          icon: <CheckCircleRoundedIcon />,
+          style: {
+            borderRadius: '10px',
+            background: '#333',
+            color: '#fff',
+          },
+        }
+      );
       handleClose();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Something went wrong!");
+    } catch (error) {
+      toast(error.response?.data?.message || "Something went wrong!",
+        {
+          icon: <CancelRoundedIcon />,
+          style: {
+            borderRadius: '10px',
+            background: '#333',
+            color: '#fff',
+          },
+        }
+      );
     } finally {
       setIsCreatingProject(false);
     }
@@ -229,7 +245,7 @@ const CustomDialog = ({ open, handleClose, setAllProjects }) => {
 };
 
 function ProjectPage() {
-  const { GET } = useAPI();
+  const { GET, POST } = useAPI();
   const navigate = useNavigate();
   const { userInfo } = useUser();
 
@@ -256,8 +272,17 @@ function ProjectPage() {
         const results = await GET("/project/get-all-projects");
         console.log(results.data)
         setAllProjects(results.data);
-      } catch (err) {
-        toast.error(err.response?.data?.message || "Something went wrong!");
+      } catch (error) {
+        toast(error.response?.data?.message || "Something went wrong!",
+          {
+            icon: <CancelRoundedIcon />,
+            style: {
+              borderRadius: '10px',
+              background: '#333',
+              color: '#fff',
+            },
+          }
+        );
       } finally {
         setIsFetchingProjectsLoading(false);
       }
@@ -322,7 +347,7 @@ function ProjectPage() {
 
 
   const [isProfileVisible, setIsProfileVisible] = useState(false);
-  const [isProjectNameEditMode, setIsProjectNameEditMode] = useState(false);
+  const [isProjectNameEditMode, setIsProjectNameEditMode] = useState("");
 
   const toggleProfile = (e) => {
     e.stopPropagation();
@@ -377,7 +402,7 @@ function ProjectPage() {
     // Function to handle clicks outside the component
     const handleClickOutside = (event) => {
       if (editMode.current && !editMode.current.contains(event.target)) {
-        setIsProjectNameEditMode(false);  // Set state to true when clicked outside
+        setIsProjectNameEditMode("");  // Set state to true when clicked outside
       }
     };
 
@@ -389,6 +414,49 @@ function ProjectPage() {
       document.removeEventListener('click', handleClickOutside);
     };
   }, []);
+
+  const [isLoadingSaveProjectName, setIsLoadingSaveProjectName] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
+
+  const handleSaveProjectName = async (e, project_id) => {
+    e.stopPropagation();
+    setIsLoadingSaveProjectName(true);
+    try {
+
+      await POST("/project/update/project-name", { project_id, project_name: newProjectName });
+      setAllProjects(prev =>
+        prev.map(project =>
+          project.project_id === project_id
+            ? { ...project, project_name: newProjectName }
+            : project
+        )
+      );
+      toast("Updated Successfully",
+        {
+          icon: <CheckCircleRoundedIcon />,
+          style: {
+            borderRadius: '10px',
+            background: '#333',
+            color: '#fff',
+          },
+        }
+      );
+    } catch (error) {
+      toast(error.response?.data?.message || "Something went wrong!",
+        {
+          icon: <CancelRoundedIcon />,
+          style: {
+            borderRadius: '10px',
+            background: '#333',
+            color: '#fff',
+          },
+        }
+      );
+    } finally {
+      setIsLoadingSaveProjectName(false);
+      setIsProjectNameEditMode("");
+    }
+  }
 
   return (
     <>
@@ -636,12 +704,13 @@ function ProjectPage() {
                   </td>
                   <td>
                     <Box sx={{ position: "relative", display: "flex", justifyContent: "flex-start", alignItems: "center" }}>
-                      {userInfo.userName === project.project_created_by && isProjectNameEditMode ?
+                      {userInfo.userName === project.project_created_by && isProjectNameEditMode === project.project_id ?
                         <input
                           ref={editMode}
                           type="text"
                           name="project_name"
-                          value={project.project_name}
+                          value={newProjectName}
+                          onChange={(e) => setNewProjectName(e.target.value)}
                           style={{
                             border: '1px solid #ccc',       // Add border color
                             borderRadius: '4px',             // Smooth border radius
@@ -657,13 +726,78 @@ function ProjectPage() {
                         </Typography>}
                       {userInfo.userName === project.project_created_by ?
                         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", mx: 1 }}>
-                          {isProjectNameEditMode ?
-                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); setIsProjectNameEditMode(false); }} sx={{ bgcolor: "#F2F2F2", mx: 1 }}>
-                              <CloseRoundedIcon fontSize="small" sx={{ color: "black" }} />
-                            </IconButton> :
-                            <IconButton size="small" onClick={(e) => { e.stopPropagation(); setIsProjectNameEditMode(true); }} sx={{ bgcolor: "#F2F2F2", mx: 1 }}>
-                              <EditRoundedIcon fontSize="small" sx={{ color: "black" }} />
-                            </IconButton>
+                          {isProjectNameEditMode === project.project_id ?
+                            <>
+                              <Tooltip title="save"
+                                enterDelay={200}
+                                leaveDelay={0}
+                                componentsProps={{
+                                  tooltip: {
+                                    sx: {
+                                      bgcolor: "common.black",
+                                      "& .MuiTooltip-arrow": {
+                                        color: "common.black",
+                                      },
+                                    },
+                                  },
+                                }}>
+                                <IconButton size="small" onClick={(e) => handleSaveProjectName(e, project.project_id)} sx={{ bgcolor: "#F2F2F2", mx: 1 }}>
+                                  {isLoadingSaveProjectName ?
+                                    <CircularProgress
+                                      size={20}
+                                      thickness={6}
+                                      sx={{
+                                        color: "black",
+                                        '& circle': { strokeLinecap: 'round' },
+                                      }}
+                                    />
+                                    :
+                                    <SaveRoundedIcon fontSize="small" sx={{ color: "black" }} />
+                                  }
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="cancel"
+                                enterDelay={200}
+                                leaveDelay={0}
+                                componentsProps={{
+                                  tooltip: {
+                                    sx: {
+                                      bgcolor: "common.black",
+                                      "& .MuiTooltip-arrow": {
+                                        color: "common.black",
+                                      },
+                                    },
+                                  },
+                                }}>
+                                <IconButton size="small" onClick={(e) => { e.stopPropagation(); setIsProjectNameEditMode(""); }} sx={{ bgcolor: "#F2F2F2", mr: 1 }}>
+                                  <CloseRoundedIcon fontSize="small" sx={{ color: "black" }} />
+                                </IconButton>
+                              </Tooltip>
+                            </>
+                            :
+                            <Tooltip title="edit"
+                              enterDelay={200}
+                              leaveDelay={0}
+                              componentsProps={{
+                                tooltip: {
+                                  sx: {
+                                    bgcolor: "common.black",
+                                    "& .MuiTooltip-arrow": {
+                                      color: "common.black",
+                                    },
+                                  },
+                                },
+                              }}>
+                              <IconButton size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setNewProjectName(project.project_name);
+                                  setIsProjectNameEditMode(project.project_id);
+                                }}
+                                sx={{ bgcolor: "#F2F2F2", mx: 1 }}>
+                                <EditRoundedIcon fontSize="small" sx={{ color: "black" }} />
+                              </IconButton>
+                            </Tooltip>
                           }
                           <Typography fontWeight="bold" fontSize="small" sx={{ mx: 1, px: 1, alignContent: "center", border: "1px solid #ff9500", color: "#ff9500", borderRadius: "8px" }}>
                             YOU

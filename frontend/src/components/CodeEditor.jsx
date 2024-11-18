@@ -92,6 +92,7 @@ import { LANGUAGE_DATA } from "../utils/constants";
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded';
 import { toast } from "react-hot-toast";
 import CancelRoundedIcon from '@mui/icons-material/CancelRounded';
+import CodeRoundedIcon from '@mui/icons-material/CodeRounded';
 
 /*
     logs: [
@@ -361,7 +362,7 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
       const { aUser, image: UserImage } = data;
       console.log("userJoined", aUser);
 
-      if (!aUser.fileId || !aUser.username || !aUser.isActiveInTab || !aUser.isLive || !aUser.liveUsersTimestamp || !aUser.projectId) return;
+      if (!aUser?.fileId || !aUser?.username || !aUser?.isActiveInTab || !aUser?.isLive || !aUser?.liveUsersTimestamp || !aUser?.projectId) return;
 
       const {
         file_id,
@@ -720,6 +721,9 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
     }
 
     setIsRunningCode(true);
+    setIsCodeInputOutputOpen(true);
+    setCodeOutput({});
+
     try {
       const results = await executeCode(language, version, sourceCode, codeInput);
       console.log("results", results);
@@ -738,6 +742,11 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
     } finally {
       setIsRunningCode(false);
     }
+  }
+
+  const [isCodeInputOutputOpen, setIsCodeInputOutputOpen] = useState(false);
+  const handleCloseCodeInputOutput = () => {
+    setIsCodeInputOutputOpen(false);
   }
 
   return (
@@ -873,8 +882,29 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
         <textarea ref={editorRef}>
         </textarea>
         <Box
+          onClick={() => {
+            setIsCodeInputOutputOpen(true);
+            setIsLogOpen(false);
+          }}
           sx={{
-            position: "absolute",
+            cursor: "pointer",
+            visibility: isCodeInputOutputOpen ? "hidden" : "visible",
+            position: "fixed",
+            p: 1,
+            m: 1,
+            bottom: 10,
+            right: 10,
+            bgcolor: "white",
+            borderRadius: "4px",
+            border: "1px solid black"
+          }}>
+          <CodeRoundedIcon sx={{ color: "#333333" }} />
+        </Box>
+        <Box
+          sx={{
+            visibility: isCodeInputOutputOpen ? "visible" : "hidden",
+            position: "fixed",
+            p: 1,
             bottom: 0,
             right: 0,
             zIndex: 99999,
@@ -883,70 +913,121 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
             height: "100vh",
             display: "flex",
             flexDirection: "column",
-            backgroundColor: "#1e1e1e", // Optional: background color for visibility
-            border: "1px solid #444",
-            borderRadius: "8px 0 0 0", // Rounded corners for top-left
             overflow: "hidden",
           }}
         >
-          {/* Input Section */}
-          <Box
-            sx={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              borderBottom: "1px solid #444",
-            }}
-          >
-            <Typography sx={{ color: "white", padding: "8px" }}>Input</Typography>
+          <Box sx={{
+            display: "flex",
+            flexDirection: "column",
+            maxWidth: "400px",
+            width: "100%", // Adjust width as needed
+            height: "100vh",
+            borderRadius: "8px", // Rounded corners for top-left
+            border: "1px solid #444",
+            bgcolor: "#F2F2F2",
+          }}>
+
+            {/* Input Section */}
             <Box
               sx={{
                 flex: 1,
                 display: "flex",
                 flexDirection: "column",
-                padding: "8px",
               }}
             >
-              <textarea
-                id="style-1"
-                style={{
-                  borderRadius: "6px",
-                  fontWeight: "bold",
-                  width: "100%",
-                  height: "100%",
-                  resize: "none",
-                  padding: "8px",
-                  boxSizing: "border-box",
-                  backgroundColor: "#222",
-                  color: "white",
-                  border: "1px solid #444",
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Typography fontWeight="bold" sx={{ color: "black", py: 1, mx: 1 }}>Input</Typography>
+                <CloseRoundedIcon
+                  onClick={handleCloseCodeInputOutput}
+                  sx={{
+                    p: '4px',
+                    m: '6px',
+                    cursor: 'pointer',
+                    fontWeight: "bold",
+                    color: 'black',
+                    borderRadius: '4px',
+                    '&:hover': { bgcolor: '#CCCCCC' },
+                  }}
+                />
+              </Box>
+              <Box
+                sx={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  px: "8px",
                 }}
-                name="code-input"
-                value={codeInput}
-                onChange={(e) => setCodeInput(e.target.value)}
-              />
+              >
+                <textarea
+                  placeholder="Inputs"
+                  id="style-1"
+                  style={{
+                    borderRadius: "6px",
+                    fontWeight: "bold",
+                    width: "100%",
+                    height: "100%",
+                    resize: "none",
+                    padding: "8px",
+                    boxSizing: "border-box",
+                    // backgroundColor: "#222",
+                    color: "black",
+                    border: "1px solid #444",
+                  }}
+                  name="code-input"
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value)}
+                />
+              </Box>
             </Box>
-          </Box>
 
-          {/* Output Section */}
-          <Box
-            sx={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
+            {/* Output Section */}
             <Box
               sx={{
+                flex: 1,
                 display: "flex",
-                alignItems: "center",
-                padding: "8px",
-                borderBottom: "1px solid #444",
+                flexDirection: "column",
+                my: 1
               }}
             >
-              <Typography sx={{ color: "white" }}>Output</Typography>
-              {codeOutput.stderr && (
-                <>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  px: "8px",
+                  py: "4px",
+                }}
+              >
+                <Typography fontWeight="bold" sx={{ color: "black" }}>Output</Typography>
+                {codeOutput.stderr && (
+                  <>
+                    <Typography
+                      variant="caption"
+                      fontWeight="bold"
+                      sx={{
+                        borderRadius: "4px",
+                        px: 1,
+                        mx: 1,
+                        color: "black",
+                        bgcolor: "white",
+                      }}
+                    >
+                      Code: {codeOutput.code}
+                    </Typography>
+                    {codeOutput.signal && <Typography
+                      variant="caption"
+                      fontWeight="bold"
+                      sx={{
+                        borderRadius: "4px",
+                        px: 1,
+                        color: "black",
+                        bgcolor: "white",
+                      }}
+                    >
+                      Signal: {codeOutput.signal}
+                    </Typography>}
+                  </>
+                )}
+                {codeOutput.stdout && !codeOutput.stderr && !isRunningCode &&
                   <Typography
                     variant="caption"
                     fontWeight="bold"
@@ -958,9 +1039,10 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
                       bgcolor: "white",
                     }}
                   >
-                    Code: {codeOutput.code}
-                  </Typography>
-                  {codeOutput.signal && <Typography
+                    Success
+                  </Typography>}
+                {!codeOutput.stdout && codeOutput.stderr && !isRunningCode &&
+                  <Typography
                     variant="caption"
                     fontWeight="bold"
                     sx={{
@@ -970,71 +1052,42 @@ const CodeEditor = ({ fileName, socket, fileId, username, setTabs, localImage })
                       bgcolor: "white",
                     }}
                   >
-                    Signal: {codeOutput.signal}
+                    Failed
                   </Typography>}
-                </>
-              )}
-              {codeOutput.stdout && !codeOutput.stderr && !isRunningCode &&
-                <Typography
-                  variant="caption"
-                  fontWeight="bold"
-                  sx={{
-                    borderRadius: "4px",
-                    px: 1,
-                    mx: 1,
-                    color: "black",
-                    bgcolor: "white",
-                  }}
-                >
-                  Success
-                </Typography>}
-              {!codeOutput.stdout && codeOutput.stderr && !isRunningCode &&
-                <Typography
-                  variant="caption"
-                  fontWeight="bold"
-                  sx={{
-                    borderRadius: "4px",
-                    px: 1,
-                    color: "black",
-                    bgcolor: "white",
-                  }}
-                >
-                  Failed
-                </Typography>}
-            </Box>
-            <Box
-              sx={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                padding: "8px",
-              }}
-            >
-              <textarea
-                id="style-1"
-                placeholder="Output"
-                readOnly
-                name="code-output"
-                style={{
-                  borderRadius: "6px",
-                  fontWeight: "bold",
-                  width: "100%",
-                  height: "100%",
-                  resize: "none",
-                  padding: "8px",
-                  boxSizing: "border-box",
-                  backgroundColor: "#222",
-                  color: codeOutput.stderr ? "red" : "#b7e4c7",
-                  border: "1px solid #444",
+              </Box>
+              <Box
+                sx={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  px: "8px",
                 }}
-                value={
-                  codeOutput.stderr
-                    ? codeOutput.output.substring(
-                      codeOutput.output.indexOf("\n") + 1
-                    )
-                    : codeOutput.output
-                }
-              />
+              >
+                <textarea
+                  id="style-1"
+                  placeholder={isRunningCode ? "Running..." : "Output"}
+                  readOnly
+                  name="code-output"
+                  style={{
+                    borderRadius: "6px",
+                    fontWeight: "bold",
+                    width: "100%",
+                    height: "100%",
+                    resize: "none",
+                    padding: "8px",
+                    boxSizing: "border-box",
+                    color: codeOutput.stderr ? "#EE6055" : "#248277",
+                    border: "1px solid #444",
+                  }}
+                  value={isRunningCode ? "Running..." :
+                    codeOutput.stderr
+                      ? codeOutput.output.substring(
+                        codeOutput.output.indexOf("\n") + 1
+                      )
+                      : codeOutput.output
+                  }
+                />
+              </Box>
             </Box>
           </Box>
         </Box>
